@@ -7,8 +7,8 @@ namespace MiniMQ.Core.MessageHandler
 {
     using System.Threading.Tasks;
 
-    using MiniMQ.Application;
     using MiniMQ.Core.Message;
+    using MiniMQ.MessageHandlers.Application;
     using MiniMQ.MessageHandlers.Queue;
 
     public class MessageHandlerFactory : IMessageHandlerFactory
