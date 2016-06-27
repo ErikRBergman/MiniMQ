@@ -35,13 +35,16 @@ namespace MiniMQ.MessageHandlers.Queue
         /// </summary>
         private readonly SemaphoreSlim semaphore = new SemaphoreSlim(0);
 
+        public string Name { get; }
+
         /// <summary>
         /// The can send and receive message.
         /// </summary>
         public bool CanSendAndReceiveMessage => false;
 
-        public MessageQueue(IMessageFactory messageFactory)
+        public MessageQueue(IMessageFactory messageFactory, string name)
         {
+            this.Name = name;
             this.messageFactory = messageFactory;
         }
 
@@ -53,20 +56,21 @@ namespace MiniMQ.MessageHandlers.Queue
         /// <summary>
         /// The receive message async.
         /// </summary>
+        /// <param name="pipeline"></param>
         /// <param name="cancellationToken">
         /// The cancellation token.
         /// </param>
         /// <returns>
         /// The <see cref="Task"/>.
         /// </returns>
-        public async Task<IMessage> ReceiveMessageAsync(CancellationToken cancellationToken)
+        public async Task ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
             await this.semaphore.WaitAsync(cancellationToken);
             IMessage message;
 
             // this will only fail if there is a bug in the program
             this.messages.TryDequeue(out message);
-            return message;
+            await pipeline.SendMessage(message);
         }
 
         /// <summary>
@@ -89,7 +93,7 @@ namespace MiniMQ.MessageHandlers.Queue
             return null;
         }
 
-        public Task<IMessage> SendAndReceiveMessageAsync(IMessage message, CancellationToken cancellationToken)
+        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException("Message queues do not support send and receive");
         }

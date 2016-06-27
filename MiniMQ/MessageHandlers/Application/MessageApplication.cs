@@ -33,10 +33,13 @@
 
         private readonly ConcurrentDictionary<string, RequestWaiter> requestWaiters = new ConcurrentDictionary<string, RequestWaiter>();
 
-        public MessageApplication(IMessageFactory messageFactory)
+        public MessageApplication(IMessageFactory messageFactory, string name)
         {
             this.messageFactory = messageFactory;
+            this.Name = name;
         }
+
+        public string Name { get; }
 
         public bool CanSendAndReceiveMessage => true;
 
@@ -45,14 +48,15 @@
             return this.messageFactory;
         }
 
-        public async Task<IMessage> ReceiveMessageAsync(CancellationToken cancellationToken)
+        public async Task ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
             await this.semaphore.WaitAsync(cancellationToken);
             IMessage message;
 
             // this will only fail if there is a bug in the program
             this.requestMessages.TryDequeue(out message);
-            return message;
+
+            await pipeline.SendMessage(message);
         }
 
         public IMessage ReceiveMessageOrNull()
@@ -72,7 +76,7 @@
         //    return semaphore;
         //}
 
-        public async Task<IMessage> SendAndReceiveMessageAsync(IMessage message, CancellationToken cancellationToken)
+        public async Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
             //var source = GetPooledSemaphoreSlim(0);
 
@@ -101,10 +105,9 @@
             if (this.requestWaiters.TryRemove(uniqueId, out waiter))
             {
                 //this.semaphorePool.ReturnObject(waiter.Waiter);
-                return waiter.Message;
+                await pipeline.SendMessage(waiter.Message);
             }
 
-            return null;
         }
 
         public Task SendMessage(IMessage message)

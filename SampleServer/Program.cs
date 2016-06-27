@@ -71,6 +71,8 @@ namespace SampleServer
 
                 string transactionId;
 
+                string requestText = string.Empty;
+
                 using (var response = await request.GetResponseAsync())
                 {
                     if (stopwatch == null)
@@ -83,7 +85,7 @@ namespace SampleServer
                     using (var stream = response.GetResponseStream())
                     {
                         var reader = new StreamReader(stream);
-                        var text = reader.ReadToEnd();
+                        requestText = reader.ReadToEnd();
 
                         // Console.WriteLine("Received: " + text);
                     }
@@ -94,7 +96,7 @@ namespace SampleServer
                 request.Method = "POST";
                 request.Timeout = 30 * 1000;
 
-                var responseText = "Ok, gotcha";
+                var responseText = "OK " + requestText;
                 var bytes = Encoding.UTF8.GetBytes(responseText);
                 request.ContentLength = bytes.Length;
 
@@ -106,8 +108,8 @@ namespace SampleServer
                 {
                     using (var stream = response.GetResponseStream())
                     {
-                        var reader = new StreamReader(stream);
-                        var text = reader.ReadToEnd();
+                        //var reader = new StreamReader(stream);
+                        //var text = reader.ReadToEnd();
 
                         // Console.WriteLine("Received: " + text);
                     }

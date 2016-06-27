@@ -79,6 +79,11 @@ namespace SampleServer
                         var reader = new StreamReader(stream);
                         var text = reader.ReadToEnd();
 
+                        if (text != "OK " + requestText)
+                        {
+                            throw new Exception("Did not ping back...");
+                        }
+
                         // Console.WriteLine("Received: " + text);
                     }
                 }

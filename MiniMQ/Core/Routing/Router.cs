@@ -52,28 +52,33 @@
                 var pathAction = PathActionParser.GetPathAction(path);
                 var messageHandlerName = GetNextPathParameter(path, pathAction.Path.Length);
 
-                var isPost = string.CompareOrdinal("POST", method) == 0;
 
                 var pipeline = new HttpContextResponseOutputMessagePipeline(context.Response);
 
                 switch (pathAction.PathAction)
                 {
                     case PathAction.SendMessage:
-                            return isPost ? 
-                                this.ProcessAdd(messageHandlerName, context.Request.Headers, context.Request.InputStream) : 
-                                this.ProcessAddSimple(messageHandlerName, context.Request.Headers, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1));
+                        {
+                            var isPost = string.CompareOrdinal("POST", method) == 0;
+                            return isPost ?
+                                    this.ProcessAdd(messageHandlerName, context.Request.Headers, context.Request.InputStream) :
+                                    this.ProcessAddSimple(messageHandlerName, context.Request.Headers, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1));
+                        }
 
                     case PathAction.ReceiveMessage:
-                            return this.ProcessGet(messageHandlerName, pipeline);
+                        return this.ProcessGet(messageHandlerName, pipeline);
 
                     case PathAction.ReceiveMessageWait:
-                            return this.ProcessGetAwait(messageHandlerName, new ContextIsClientConnected(context), pipeline);
-                        
+                        return this.ProcessGetAwait(messageHandlerName, new ContextIsClientConnected(context), pipeline);
+
                     case PathAction.SendAndReceiveMessageWait:
-                        return
-                            isPost ? 
-                                this.SendAndReceiveMessageWait(messageHandlerName, context.Request.InputStream, new ContextIsClientConnected(context), pipeline) : 
+                        {
+                            var isPost = string.CompareOrdinal("POST", method) == 0;
+
+                            return isPost ?
+                                this.SendAndReceiveMessageWait(messageHandlerName, context.Request.InputStream, new ContextIsClientConnected(context), pipeline) :
                                 this.SendAndReceiveMessageWait(messageHandlerName, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1), new ContextIsClientConnected(context), pipeline);
+                        }
 
                     case PathAction.CreateQueue:
                         return this.CreateQueue(messageHandlerName, context.Request.Headers);
@@ -165,31 +170,26 @@
         {
             var cancellationTokenSource = new CancellationTokenSource();
 
-            Task<IMessage> getNextMessageTask;
+            Task getNextMessageTask;
 
             if (messageToSend == null)
             {
-                getNextMessageTask = messageHandler.ReceiveMessageAsync(cancellationTokenSource.Token);
+                getNextMessageTask = messageHandler.ReceiveMessageAsync(pipeline, cancellationTokenSource.Token);
             }
             else
             {
-                getNextMessageTask = messageHandler.SendAndReceiveMessageAsync(messageToSend, cancellationTokenSource.Token);
+                getNextMessageTask = messageHandler.SendAndReceiveMessageAsync(messageToSend, pipeline, cancellationTokenSource.Token);
             }
 
             if (getNextMessageTask.IsCompleted)
             {
-                if (clientConnected.IsClientConnected == false)
-                {
-                    return Task.CompletedTask;
-                }
-
-                return SendMessageToPipeline(pipeline, getNextMessageTask);
+                return Task.CompletedTask;
             }
 
             return SendAndReceiveAwaitWait(getNextMessageTask, clientConnected, pipeline, cancellationTokenSource);
         }
 
-        private static async Task SendAndReceiveAwaitWait(Task<IMessage> getNextMessageTask, IClientConnected clientConnected, IMessagePipeline pipeline, CancellationTokenSource cancellationTokenSource)
+        private static async Task SendAndReceiveAwaitWait(Task getNextMessageTask, IClientConnected clientConnected, IMessagePipeline pipeline, CancellationTokenSource cancellationTokenSource)
         {
             while (true)
             {
@@ -204,19 +204,8 @@
 
                 if (doneTask == getNextMessageTask)
                 {
-                    await SendMessageToPipeline(pipeline, getNextMessageTask);
                     return;
                 }
-            }
-        }
-
-        private static async Task SendMessageToPipeline(IMessagePipeline pipeline, Task<IMessage> getNextMessageTask)
-        {
-            var message = getNextMessageTask.Result;
-
-            if (message != null)
-            {
-                await pipeline.SendMessage(message).ConfigureAwait(false);
             }
         }
 

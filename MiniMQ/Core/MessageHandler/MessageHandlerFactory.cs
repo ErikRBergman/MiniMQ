@@ -15,14 +15,17 @@ namespace MiniMQ.Core.MessageHandler
     {
         private readonly IMessageFactory messageFactory;
 
-        public MessageHandlerFactory(IMessageFactory messageFactory)
+        private readonly IMessageFactory applicationMessageFactory;
+
+        public MessageHandlerFactory(IMessageFactory messageFactory, IMessageFactory applicationMessageFactory)
         {
             this.messageFactory = messageFactory;
+            this.applicationMessageFactory = applicationMessageFactory;
         }
 
         public Task<IMessageHandler> CreateQueue(string queueName)
         {
-            return Task.FromResult((IMessageHandler)new MessageQueue(this.messageFactory));
+            return Task.FromResult((IMessageHandler)new MessageQueue(this.messageFactory, queueName));
         }
 
         public Task<IMessageHandler> CreateBus(string busName)
@@ -32,7 +35,7 @@ namespace MiniMQ.Core.MessageHandler
 
         public Task<IMessageHandler> CreateApplication(string applicationName)
         {
-            return Task.FromResult((IMessageHandler)new MessageApplication(this.messageFactory));
+            return Task.FromResult((IMessageHandler)new MessageApplication(this.applicationMessageFactory, applicationName));
         }
     }
 }

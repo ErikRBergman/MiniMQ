@@ -20,6 +20,8 @@ namespace MiniMQ.Core.MessageHandler
     /// </summary>
     public interface IMessageHandler
     {
+        string Name { get; }
+
         /// <summary>
         /// Gets a value indicating whether can send and receive message.
         /// </summary>
@@ -42,7 +44,7 @@ namespace MiniMQ.Core.MessageHandler
         /// <returns>
         /// The <see cref="Task"/>.
         /// </returns>
-        Task<IMessage> ReceiveMessageAsync(CancellationToken cancellationToken);
+        Task ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken);
 
         /// <summary>
         /// The receive message or null.
@@ -61,7 +63,7 @@ namespace MiniMQ.Core.MessageHandler
         /// <returns>
         /// The <see cref="Task"/>.
         /// </returns>
-        Task<IMessage> SendAndReceiveMessageAsync(IMessage message, CancellationToken cancellationToken);
+        Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken);
 
         /// <summary>
         /// The send message.

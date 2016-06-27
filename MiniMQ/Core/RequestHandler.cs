@@ -15,7 +15,7 @@
 
         private static readonly IMessageHandlerContainer MessageHandlerContainer = new MessageHandlerContainer();
 
-        private static readonly IMessageHandlerFactory MessageHandlerFactory = new MessageHandlerFactory(new MessageFactory());
+        private static readonly IMessageHandlerFactory MessageHandlerFactory = new MessageHandlerFactory(new MessageFactory(), new PassThroughMessageFactory());
 
         private static readonly Router Router = new Router(MessageHandlerContainer, MessageHandlerFactory);
 

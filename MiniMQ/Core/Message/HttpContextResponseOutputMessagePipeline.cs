@@ -19,6 +19,11 @@ namespace MiniMQ.Core.Message
 
         public async Task SendMessage(IMessage message)
         {
+            if (this.httpResponse.IsClientConnected == false)
+            {
+                return;
+            }
+
             var stream = await message.GetStream();
 
             if (stream != null)
