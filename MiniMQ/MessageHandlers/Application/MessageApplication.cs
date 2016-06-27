@@ -1,0 +1,133 @@
+﻿namespace MiniMQ.MessageHandlers.Application
+{
+    using System;
+    using System.Collections.Concurrent;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    using MiniMQ.Core.Message;
+    using MiniMQ.Core.MessageHandler;
+
+    public class MessageApplication : IMessageHandler
+    {
+        private readonly IMessageFactory messageFactory;
+
+        private readonly SemaphoreSlim semaphore = new SemaphoreSlim(0);
+
+        //private readonly ObjectPool<PooledSemaphoreSlim> semaphorePool = new ObjectPool<PooledSemaphoreSlim>(10000);
+
+        private readonly ConcurrentQueue<IMessage> requestMessages = new ConcurrentQueue<IMessage>();
+
+        private struct RequestWaiter
+        {
+            public RequestWaiter(SemaphoreSlim waiter, IMessage message)
+            {
+                this.Waiter = waiter;
+                this.Message = message;
+            }
+
+            public SemaphoreSlim Waiter;
+
+            public IMessage Message;
+        }
+
+        private readonly ConcurrentDictionary<string, RequestWaiter> requestWaiters = new ConcurrentDictionary<string, RequestWaiter>();
+
+        public MessageApplication(IMessageFactory messageFactory)
+        {
+            this.messageFactory = messageFactory;
+        }
+
+        public bool CanSendAndReceiveMessage => true;
+
+        public IMessageFactory GetMessageFactory()
+        {
+            return this.messageFactory;
+        }
+
+        public async Task<IMessage> ReceiveMessageAsync(CancellationToken cancellationToken)
+        {
+            await this.semaphore.WaitAsync(cancellationToken);
+            IMessage message;
+
+            // this will only fail if there is a bug in the program
+            this.requestMessages.TryDequeue(out message);
+            return message;
+        }
+
+        public IMessage ReceiveMessageOrNull()
+        {
+            throw new NotImplementedException();
+        }
+
+        //private PooledSemaphoreSlim GetPooledSemaphoreSlim(int initialCount)
+        //{
+        //    var semaphore = this.semaphorePool.GetNewObject(() => new PooledSemaphoreSlim(initialCount));
+
+        //    if (semaphore.Count != initialCount)
+        //    {
+        //        semaphore.Count = initialCount;
+        //    }
+            
+        //    return semaphore;
+        //}
+
+        public async Task<IMessage> SendAndReceiveMessageAsync(IMessage message, CancellationToken cancellationToken)
+        {
+            //var source = GetPooledSemaphoreSlim(0);
+
+            var source = new SemaphoreSlim(0);
+
+            var uniqueId = message.UniqueIdentifier;
+
+            this.requestWaiters.TryAdd(uniqueId, new RequestWaiter(source, null));
+            this.requestMessages.Enqueue(message);
+
+            this.semaphore.Release();
+
+            RequestWaiter waiter;
+
+            try
+            {
+                await source.WaitAsync(cancellationToken);
+            }
+            catch (Exception)
+            {
+                this.requestWaiters.TryRemove(uniqueId, out waiter);
+                //this.semaphorePool.ReturnObject(waiter.Waiter);
+                throw;
+            }
+
+            if (this.requestWaiters.TryRemove(uniqueId, out waiter))
+            {
+                //this.semaphorePool.ReturnObject(waiter.Waiter);
+                return waiter.Message;
+            }
+
+            return null;
+        }
+
+        public Task SendMessage(IMessage message)
+        {
+            var uniqueId = message.UniqueIdentifier;
+
+            RequestWaiter waiter;
+
+            if (this.requestWaiters.TryGetValue(uniqueId, out waiter))
+            {
+                waiter.Message = message;
+                // Since waiter is a struct, we need to replace it in the dictionary
+                this.requestWaiters[uniqueId] = waiter;
+
+                waiter.Waiter.Release();
+
+                return Task.CompletedTask;
+            }
+
+            this.requestMessages.Enqueue(message);
+            this.semaphore.Release();
+
+            return Task.CompletedTask;
+        }
+    }
+}
