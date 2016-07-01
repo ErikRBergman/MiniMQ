@@ -3,11 +3,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{02061B8D-DB20-4B98-84AB-51770F56A683}</ProjectGuid>
+    <ProjectGuid>{5FBE1DEA-195A-46B1-8B7A-1600AB88743D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MiniMQ.Core.Test</RootNamespace>
-    <AssemblyName>MiniMQ.Core.Test</AssemblyName>
+    <RootNamespace>MiniMQ.Core.Tests</RootNamespace>
+    <AssemblyName>MiniMQ.Core.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -50,18 +50,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="PathActionParserTest.cs" />
+    <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\MiniMQ.Core\MiniMQ.Core.csproj">
-      <Project>{98055546-de04-4627-9e82-26f77ab9c69e}</Project>
-      <Name>MiniMQ.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MiniMQ\MiniMQ.csproj">
-      <Project>{98caea5e-0f49-4120-a99e-f4bcc229ce3b}</Project>
-      <Name>MiniMQ</Name>
-    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

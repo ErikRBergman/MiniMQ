@@ -5,6 +5,7 @@
     using System.Text;
     using System.Threading.Tasks;
 
+    using MiniMQ.Core.Core.Stream;
     using MiniMQ.Core.Message.Pool;
 
     public class MessageFactory : IMessageFactory
@@ -35,27 +36,15 @@
         /// </returns>
         private static async Task<Stream> CreateStreamCopy(Stream message)
         {
-            var newStream = GetNewStream((int)message.Length);
-
-            message.Position = 0;
+            var newStream = GetNewStream();
             await message.CopyToAsync(newStream);
+            newStream.Position = 0;
             return newStream;
         }
 
-        public static ObjectPool<PooledStream> MemoryStreamPool = new ObjectPool<PooledStream>(2000);
-
-        private static Stream GetNewStream(int minCapacity)
+        private static Stream GetNewStream()
         {
-            var stream = MemoryStreamPool.GetNewObject(() => new PooledStream(new MemoryStream(minCapacity), MemoryStreamPool));
-
-            stream.Position = 0;
-
-            if (stream.Capacity < minCapacity)
-            {
-                stream.Capacity = minCapacity;
-            }
-
-            return stream;
+            return new PartitionedByteStream(true);
         }
     }
 }

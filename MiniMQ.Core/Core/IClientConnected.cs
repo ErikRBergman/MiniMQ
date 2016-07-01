@@ -1,4 +1,4 @@
-namespace MiniMQ.Core.Routing
+namespace MiniMQ.Core.Core
 {
     public interface IClientConnected
     {

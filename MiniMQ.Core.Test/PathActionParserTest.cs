@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace MiniMQ.Core.Test
 {
     using MiniMQ.Core.Routing;
+    using MiniMQ.Routing;
 
     [TestClass]
     public class PathActionParserTest

@@ -1,17 +1,16 @@
-﻿namespace MiniMQ.Core.Routing
+﻿namespace MiniMq.WebApi.Routing
 {
     using System;
-    using System.Collections.Specialized;
     using System.IO;
-    using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Web;
 
-    using MessageHandler;
+    using Microsoft.AspNetCore.Http;
 
-    using Message;
+    using MiniMQ.Core.Core;
+    using MiniMQ.Core.Message;
+    using MiniMQ.Core.MessageHandler;
+    using MiniMQ.Core.Routing;
 
     public class Router
     {
@@ -38,22 +37,29 @@
             public ContextIsClientConnected(HttpContext context)
             {
                 this.context = context;
+                this.IsClientConnected = true;
+                this.context.RequestAborted.Register(this.AbortCallback);
             }
 
-            public bool IsClientConnected => this.context.Response.IsClientConnected;
+            private void AbortCallback()
+            {
+                this.IsClientConnected = false;
+            }
+
+            public bool IsClientConnected { get; private set; }
         }
 
         public Task RouteCall(HttpContext context, string path)
         {
             if (path.Length >= 5)
             {
-                var method = context.Request.HttpMethod;
+                var method = context.Request.Method;
 
                 var pathAction = PathActionParser.GetPathAction(path);
                 var messageHandlerName = GetNextPathParameter(path, pathAction.Path.Length);
 
 
-                var pipeline = new HttpContextResponseOutputMessagePipeline(context.Response);
+                var pipeline = new HttpContextResponseOutputMessagePipeline(context);
 
                 switch (pathAction.PathAction)
                 {
@@ -61,8 +67,8 @@
                         {
                             var isPost = string.CompareOrdinal("POST", method) == 0;
                             return isPost ?
-                                    this.ProcessAdd(messageHandlerName, context.Request.Headers, context.Request.InputStream) :
-                                    this.ProcessAddSimple(messageHandlerName, context.Request.Headers, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1));
+                                    this.ProcessAdd(messageHandlerName, context.Request.Headers, context.Request.Body) :
+                                    this.ProcessAddSimple(messageHandlerName, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1));
                         }
 
                     case PathAction.ReceiveMessage:
@@ -76,18 +82,18 @@
                             var isPost = string.CompareOrdinal("POST", method) == 0;
 
                             return isPost ?
-                                this.SendAndReceiveMessageWait(messageHandlerName, context.Request.InputStream, new ContextIsClientConnected(context), pipeline) :
+                                this.SendAndReceiveMessageWait(messageHandlerName, context.Request.Body, new ContextIsClientConnected(context), pipeline) :
                                 this.SendAndReceiveMessageWait(messageHandlerName, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1), new ContextIsClientConnected(context), pipeline);
                         }
 
                     case PathAction.CreateQueue:
-                        return this.CreateQueue(messageHandlerName, context.Request.Headers);
+                        return this.CreateQueue(messageHandlerName);
 
                     case PathAction.CreateApplication:
-                        return this.CreateApplication(messageHandlerName, context.Request.Headers);
+                        return this.CreateApplication(messageHandlerName);
 
                     case PathAction.CreateBus:
-                        return this.CreateBus(messageHandlerName, context.Request.Headers);
+                        return this.CreateBus(messageHandlerName);
                 }
             }
 
@@ -103,7 +109,7 @@
                 var factory = messageHandler.GetMessageFactory();
                 var messageToSend = await factory.CreateMessage(inputText);
 
-                await SendAndReceiveAwait(messageHandlerName, messageToSend, clientConnected, pipeline).ConfigureAwait(false);
+                await this.SendAndReceiveAwait(messageHandlerName, messageToSend, clientConnected, pipeline).ConfigureAwait(false);
             }
         }
 
@@ -116,32 +122,32 @@
                 var factory = messageHandler.GetMessageFactory();
                 var messageToSend = await factory.CreateMessage(inputStream).ConfigureAwait(false);
 
-                await SendAndReceiveAwait(messageHandlerName, messageToSend, clientConnected, pipeline).ConfigureAwait(false);
+                await this.SendAndReceiveAwait(messageHandlerName, messageToSend, clientConnected, pipeline).ConfigureAwait(false);
             }
         }
 
-        private async Task CreateQueue(string messageHandlerName, NameValueCollection headers)
+        private async Task CreateQueue(string messageHandlerName)
         {
             this.messageHandlerContainer.AddMessageHandler(
                 messageHandlerName,
                 await this.messageHandlerFactory.CreateQueue(messageHandlerName).ConfigureAwait(false));
         }
 
-        private async Task CreateBus(string busName, NameValueCollection headers)
+        private async Task CreateBus(string busName)
         {
             this.messageHandlerContainer.AddMessageHandler(
                 busName,
                 await this.messageHandlerFactory.CreateBus(busName));
         }
 
-        private async Task CreateApplication(string applicationName, NameValueCollection headers)
+        private async Task CreateApplication(string applicationName)
         {
             this.messageHandlerContainer.AddMessageHandler(
                 applicationName,
                 await this.messageHandlerFactory.CreateApplication(applicationName).ConfigureAwait(false));
         }
 
-        private async Task ProcessAddSimple(string messageHandlerName, NameValueCollection headers, string message)
+        private async Task ProcessAddSimple(string messageHandlerName, string message)
         {
             var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
 
@@ -157,7 +163,7 @@
 
         private Task ProcessGetAwait(string messageHandlerName, IClientConnected clientConnected, IMessagePipeline pipeline)
         {
-            return SendAndReceiveAwait(messageHandlerName, null, clientConnected, pipeline);
+            return this.SendAndReceiveAwait(messageHandlerName, null, clientConnected, pipeline);
         }
 
         private Task SendAndReceiveAwait(string messageHandlerName, IMessage messageToSend, IClientConnected clientConnected, IMessagePipeline pipeline)
@@ -222,7 +228,7 @@
             return Task.CompletedTask;
         }
 
-        private async Task ProcessAdd(string messageHandlerName, NameValueCollection headers, Stream inputStream)
+        private async Task ProcessAdd(string messageHandlerName, IHeaderDictionary headers, Stream inputStream)
         {
             var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
 
@@ -234,7 +240,7 @@
 
                 IMessage message;
 
-                if (transactionId != null)
+                if (transactionId.Count != 0)
                 {
                     message = await messageFactory.CreateMessage(inputStream, transactionId).ConfigureAwait(false);
                 }

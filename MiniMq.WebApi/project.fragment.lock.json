@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "exports": {
+    "MiniMQ.Core/1.0.0": {
+      "type": "project",
+      "framework": ".NETFramework,Version=v4.6.1",
+      "compile": {
+        "bin/Debug/MiniMQ.Core.dll": {}
+      },
+      "runtime": {
+        "bin/Debug/MiniMQ.Core.dll": {}
+      },
+      "contentFiles": {
+        "bin/Debug/MiniMQ.Core.pdb": {
+          "buildAction": "None",
+          "codeLanguage": "any",
+          "copyToOutput": true
+        }
+      }
+    }
+  }
+}

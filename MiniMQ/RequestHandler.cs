@@ -6,8 +6,7 @@
     using MessageHandler;
 
     using MiniMQ.Core.Message;
-
-    using Routing;
+    using MiniMQ.Routing;
 
     public class RequestHandler : HttpTaskAsyncHandler
     {
