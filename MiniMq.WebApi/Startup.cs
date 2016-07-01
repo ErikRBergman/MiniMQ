@@ -1,25 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-
-namespace MiniMq.WebApi
+﻿namespace MiniMq.WebApi
 {
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Routing;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
 
-    using MiniMq.WebApi.Routing;
+    using Microsoft.AspNetCore.Http;
+
+    using Routing;
 
     using MiniMQ.Core.Message;
     using MiniMQ.Core.MessageHandler;
+    using MiniMQ.Core.Routing;
 
     public class Startup
     {
+        private static readonly IMessageHandlerContainer MessageHandlerContainer = new MessageHandlerContainer();
+        private static readonly IMessageHandlerFactory MessageHandlerFactory = new MessageHandlerFactory(new MessageFactory(), new MessageFactory());
+        private static readonly Router Router = new Router(MessageHandlerContainer, MessageHandlerFactory);
+
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -52,15 +54,19 @@ namespace MiniMq.WebApi
             app.Run(this.Handler);
         }
 
-        private static readonly IMessageHandlerContainer MessageHandlerContainer = new MessageHandlerContainer();
-
-        private static readonly IMessageHandlerFactory MessageHandlerFactory = new MessageHandlerFactory(new MessageFactory(), new MessageFactory());
-
-        private static readonly Router Router = new Router(MessageHandlerContainer, MessageHandlerFactory);
 
         private Task Handler(HttpContext context)
         {
-            return Router.RouteCall(context, context.Request.Path);
+            var routerResult = Router.RouteCall(context, context.Request.Path);
+
+            if (routerResult == Router.RouteFailedTask)
+            {
+                context.Response.StatusCode = 404;
+                return context.Response.WriteAsync("MiniMQ - Command not found! Try: " + string.Join(", ", PathActionMap.Items.Select(pami => pami.Path)));
+            }
+
+            return routerResult;
+
         }
     }
 }

@@ -20,7 +20,7 @@
       "commandName": "Project",
       "commandLineArgs": "http://localhost:64849",
       "launchBrowser": true,
-      "launchUrl": "http://localhost:5000/cre_q/Q1",
+      "launchUrl": "http://localhost:64849/cre_q/Q1",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
       }
