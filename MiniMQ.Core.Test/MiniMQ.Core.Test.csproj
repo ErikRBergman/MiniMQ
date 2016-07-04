@@ -58,10 +58,6 @@
       <Project>{98055546-de04-4627-9e82-26f77ab9c69e}</Project>
       <Name>MiniMQ.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MiniMQ\MiniMQ.csproj">
-      <Project>{98caea5e-0f49-4120-a99e-f4bcc229ce3b}</Project>
-      <Name>MiniMQ</Name>
-    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

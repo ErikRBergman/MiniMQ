@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniMQ", "MiniMQ\MiniMQ.csproj", "{98CAEA5E-0F49-4120-A99E-F4BCC229CE3B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniMQ.Core.Test", "MiniMQ.Core.Test\MiniMQ.Core.Test.csproj", "{02061B8D-DB20-4B98-84AB-51770F56A683}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleServer", "SampleServer\SampleServer.csproj", "{F3742423-488D-451E-9CFE-A7EC11CD45AD}"
@@ -21,10 +19,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{98CAEA5E-0F49-4120-A99E-F4BCC229CE3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{98CAEA5E-0F49-4120-A99E-F4BCC229CE3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{98CAEA5E-0F49-4120-A99E-F4BCC229CE3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{98CAEA5E-0F49-4120-A99E-F4BCC229CE3B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{02061B8D-DB20-4B98-84AB-51770F56A683}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{02061B8D-DB20-4B98-84AB-51770F56A683}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02061B8D-DB20-4B98-84AB-51770F56A683}.Release|Any CPU.ActiveCfg = Release|Any CPU
