@@ -9,18 +9,23 @@
     using Microsoft.Extensions.Logging;
 
     using Microsoft.AspNetCore.Http;
+    using Microsoft.Extensions.Primitives;
 
     using Routing;
 
     using MiniMQ.Core.Message;
     using MiniMQ.Core.MessageHandler;
+    using MiniMQ.Core.MessageHandlers.InMemory.Application;
+    using MiniMQ.Core.MessageHandlers.InMemory.Bus;
+    using MiniMQ.Core.MessageHandlers.InMemory.Queue;
     using MiniMQ.Core.Routing;
+    using MiniMQ.Model.Core.MessageHandler;
 
     public class Startup
     {
         private static readonly IMessageHandlerContainer MessageHandlerContainer = new MessageHandlerContainer();
-        private static readonly IMessageHandlerFactory MessageHandlerFactory = new MessageHandlerFactory(new MessageFactory(), new MessageFactory());
-        private static readonly Router Router = new Router(MessageHandlerContainer, MessageHandlerFactory);
+        private static readonly IMessageHandlerProducer MessageHandlerProducer = new MessageHandlerProducer(new MessageQueueFactory(new MessageFactory()), new MessageApplicationFactory(new MessageFactory()), new MessageBusFactory());
+        private static readonly Router Router = new Router(MessageHandlerContainer, MessageHandlerProducer);
 
         public Startup(IHostingEnvironment env)
         {
@@ -51,6 +56,8 @@
                 loggerFactory.AddDebug();
             }
 
+            app.UseWebSockets();
+
             app.Run(this.Handler);
         }
 
@@ -59,10 +66,25 @@
         {
             var routerResult = Router.RouteCall(context, context.Request.Path);
 
-            if (routerResult == Router.RouteFailedTask)
+            var routingResult = routerResult as Task<Router.RouteResult>;
+            if (routingResult != null)
             {
-                context.Response.StatusCode = 404;
-                return context.Response.WriteAsync("MiniMQ - Command not found! Try: " + string.Join(", ", PathActionMap.Items.Select(pami => pami.Path)));
+                if (ReferenceEquals(routerResult, Router.RouteFailedTask))
+                {
+                    context.Response.StatusCode = 404;
+                    return context.Response.WriteAsync("MiniMQ - Command not found! Try: " + string.Join(", ", PathActionMap.Items.Select(pami => pami.Path)));
+                }
+
+                return routingResult.ContinueWith(async rr =>
+                    {
+                        var result = rr.Result;
+
+                        if (result.Failed)
+                        {
+                            context.Response.StatusCode = 500;
+                            await context.Response.WriteAsync(result.Description);
+                        }
+                    });
             }
 
             return routerResult;

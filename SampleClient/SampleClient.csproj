@@ -46,9 +46,17 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RawMiniMqClientHttpClient.cs" />
+    <Compile Include="ReactiveConnectionClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MiniMQ.Client\MiniMQ.Client.csproj">
+      <Project>{c1126088-2af0-4f67-91e5-ce9c673fd81f}</Project>
+      <Name>MiniMQ.Client</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

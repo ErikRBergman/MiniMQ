@@ -10,6 +10,9 @@ namespace MiniMQ.Core.Message
 
     using Microsoft.AspNetCore.Http;
 
+    using MiniMQ.Model.Core.Message;
+    using MiniMQ.Model.Core.MessageHandler;
+
     public struct HttpContextResponseOutputMessagePipeline : IMessagePipeline
     {
         private readonly HttpContext httpContext;

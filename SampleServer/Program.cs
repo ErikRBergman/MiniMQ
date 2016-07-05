@@ -24,17 +24,25 @@ namespace SampleServer
                 baseUrl = baseUrl + "/";
             }
 
+            int serviceCount = 1;
             string applicationName = "app1";
-            CreateApplication(baseUrl, applicationName).Wait();
 
-            var tasks = new List<Task>(50);
+            MainAsync(baseUrl, applicationName, serviceCount).Wait();
+        }
 
-            for (int i = 0; i < tasks.Capacity; i++)
+        private static async Task MainAsync(string baseUrl, string applicationName, int serviceCount)
+        {
+            await Task.Delay(2000);
+
+            await CreateApplication(baseUrl, applicationName);
+            var tasks = new List<Task>(serviceCount);
+
+            for (int i = 0; i < serviceCount; i++)
             {
                 tasks.Add(ServeAsync(baseUrl, applicationName));
             }
 
-            Task.WhenAll(tasks).Wait();
+            await Task.WhenAll(tasks);
         }
 
         static string ReceiveMessageWaitUrl(string baseUrl, string messageHandlerName)
@@ -47,7 +55,6 @@ namespace SampleServer
             return baseUrl + "cre_a/" + messageHandlerName;
         }
 
-
         static string SendMessageUrl(string baseUrl, string messageHandlerName)
         {
             return baseUrl + "snd/" + messageHandlerName;
@@ -57,7 +64,6 @@ namespace SampleServer
 
         static async Task ServeAsync(string baseUrl, string applicationName)
         {
-            await Task.Delay(5000);
             await Task.Yield();
 
             Stopwatch stopwatch = null;

@@ -9,6 +9,8 @@ namespace MiniMQ.Core.Message
     using System.Text;
     using System.Threading.Tasks;
 
+    using MiniMQ.Model.Core.Message;
+
     public class PassThroughMessageFactory : IMessageFactory
     {
         public Task<IMessage> CreateMessage(Stream stream)

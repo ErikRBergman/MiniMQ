@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniMQ.Core.Message
+namespace MiniMQ.Client.Model
 {
-    public interface IMessagePipeline
+    public class Message
     {
-        Task SendMessage(IMessage message);
+
+
     }
 }

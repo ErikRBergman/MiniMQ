@@ -2,6 +2,7 @@
 {
     using System;
     using System.IO;
+    using System.Net.WebSockets;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -11,22 +12,37 @@
     using MiniMQ.Core.Message;
     using MiniMQ.Core.MessageHandler;
     using MiniMQ.Core.Routing;
+    using MiniMQ.Model.Core.Message;
+    using MiniMQ.Model.Core.MessageHandler;
 
     public class Router
     {
         private readonly IMessageHandlerContainer messageHandlerContainer;
 
-        private readonly IMessageHandlerFactory messageHandlerFactory;
+        private readonly IMessageHandlerProducer messageHandlerProducer;
 
         public Router(
             IMessageHandlerContainer messageHandlerContainer,
-            IMessageHandlerFactory messageHandlerFactory)
+            IMessageHandlerProducer messageHandlerProducer)
         {
             this.messageHandlerContainer = messageHandlerContainer;
-            this.messageHandlerFactory = messageHandlerFactory;
+            this.messageHandlerProducer = messageHandlerProducer;
         }
 
-        public static readonly Task RouteFailedTask = Task.FromResult("Routing failed");
+        public static readonly Task<RouteResult> RouteFailedTask = Task.FromResult(new RouteResult { Description = "Routing failed" });
+
+        public struct RouteResult
+        {
+            public bool Failed { get; set; }
+
+            public RouteResult(string description, bool failed = true)
+            {
+                this.Description = description;
+                this.Failed = failed;
+            }
+
+            public string Description { get; set; }
+        }
 
         private static readonly PathActionParser PathActionParser = new PathActionParser(PathActionMap.Items);
 
@@ -51,58 +67,128 @@
 
         public Task RouteCall(HttpContext context, string path)
         {
-            if (path.Length >= 5)
+            var pathAction = PathActionParser.GetPathAction(path);
+            var messageHandlerName = GetNextPathParameter(path, pathAction.Path.Length);
+
+            if (pathAction.PathAction == PathAction.WebSocketConnect)
             {
-                var method = context.Request.Method;
-
-                var pathAction = PathActionParser.GetPathAction(path);
-                var messageHandlerName = GetNextPathParameter(path, pathAction.Path.Length);
-
-
-                var pipeline = new HttpContextResponseOutputMessagePipeline(context);
-
-                switch (pathAction.PathAction)
-                {
-                    case PathAction.SendMessage:
-                        {
-                            var isPost = string.CompareOrdinal("POST", method) == 0;
-                            return isPost ?
-                                    this.ProcessAdd(messageHandlerName, context.Request.Headers, context.Request.Body) :
-                                    this.ProcessAddSimple(messageHandlerName, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1));
-                        }
-
-                    case PathAction.ReceiveMessage:
-                        return this.ProcessGet(messageHandlerName, pipeline);
-
-                    case PathAction.ReceiveMessageWait:
-                        return this.ProcessGetAwait(messageHandlerName, new ContextIsClientConnected(context), pipeline);
-
-                    case PathAction.SendAndReceiveMessageWait:
-                        {
-                            var isPost = string.CompareOrdinal("POST", method) == 0;
-
-                            return isPost ?
-                                this.SendAndReceiveMessageWait(messageHandlerName, context.Request.Body, new ContextIsClientConnected(context), pipeline) :
-                                this.SendAndReceiveMessageWait(messageHandlerName, path.Substring(pathAction.Path.Length + messageHandlerName.Length + 1), new ContextIsClientConnected(context), pipeline);
-                        }
-
-                    case PathAction.CreateQueue:
-                        return this.CreateQueue(messageHandlerName);
-
-                    case PathAction.CreateApplication:
-                        return this.CreateApplication(messageHandlerName);
-
-                    case PathAction.CreateBus:
-                        return this.CreateBus(messageHandlerName);
-                }
+                return this.ConnectWebSocketRequestValidation(context, messageHandlerName, GetPathRequestInformation(path, pathAction, messageHandlerName));
             }
+
+            var pipeline = new HttpContextResponseOutputMessagePipeline(context);
+
+            switch (pathAction.PathAction)
+            {
+                case PathAction.SendMessage:
+                    return this.SendMessageAsync(context, path, messageHandlerName, pathAction);
+
+                case PathAction.ReceiveMessage:
+                    return this.ProcessGet(messageHandlerName, pipeline);
+
+                case PathAction.ReceiveMessageWait:
+                    return this.ProcessGetAwait(messageHandlerName, new ContextIsClientConnected(context), pipeline);
+
+                case PathAction.SendAndReceiveMessageWait:
+                    return this.SendAndReceiveMessageWaitAsync(context, path, messageHandlerName, pipeline, pathAction);
+
+                case PathAction.CreateQueue:
+                    return this.CreateQueue(messageHandlerName);
+
+                case PathAction.CreateApplication:
+                    return this.CreateApplication(messageHandlerName);
+
+                case PathAction.CreateBus:
+                    return this.CreateBus(messageHandlerName);
+            }
+
 
             return RouteFailedTask;
         }
 
+        private Task SendAndReceiveMessageWaitAsync(HttpContext context, string path, string messageHandlerName, HttpContextResponseOutputMessagePipeline pipeline, PathActionMapItem pathAction)
+        {
+            {
+                var method = context.Request.Method;
+                var isPost = string.CompareOrdinal("POST", method) == 0;
+
+                return isPost
+                           ? this.SendAndReceiveMessageWait(messageHandlerName, context.Request.Body, new ContextIsClientConnected(context), pipeline)
+                           : this.SendAndReceiveMessageWait(messageHandlerName, GetPathRequestInformation(path, pathAction, messageHandlerName), new ContextIsClientConnected(context), pipeline);
+            }
+        }
+
+        private Task SendMessageAsync(HttpContext context, string path, string messageHandlerName, PathActionMapItem pathAction)
+        {
+            var method = context.Request.Method;
+            var isPost = string.CompareOrdinal("POST", method) == 0;
+            return isPost ? this.ProcessAdd(messageHandlerName, context.Request.Headers, context.Request.Body) : this.ProcessAddSimple(messageHandlerName, GetPathRequestInformation(path, pathAction, messageHandlerName));
+        }
+
+        private static string GetPathRequestInformation(string path, PathActionMapItem pathAction, string messageHandlerName)
+        {
+            var startIndex = pathAction.Path.Length + messageHandlerName.Length + 1;
+
+            if (startIndex >= path.Length)
+            {
+                return string.Empty;
+            }
+
+            return path.Substring(startIndex);
+        }
+
+        private Task<RouteResult> ConnectWebSocketRequestValidation(HttpContext context, string messageHandlerName, string requestInformation)
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.WriteAsync("Attempt to call web sockets connect without being a web sockets request");
+                return RouteFailedTask;
+            }
+
+            var messageHandler = this.GetMessageHandler(messageHandlerName);
+
+            if (messageHandler == null)
+            {
+                return Task.FromResult(new RouteResult("Message handler does not exist"));
+            }
+
+            if (messageHandler.SupportsWebSocketConnections == false)
+            {
+                return Task.FromResult(new RouteResult("Message handler does not support web socket connections"));
+            }
+
+            return this.ConnectWebSocket(context, messageHandler, requestInformation);
+        }
+
+        private async Task<RouteResult> ConnectWebSocket(HttpContext context, IMessageHandler messageHandler, string requestInformation)
+        {
+            var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+            return new RouteResult("Error in the connection...");
+
+            if (webSocket != null)
+            {
+                if (webSocket.State == WebSocketState.Open)
+                {
+
+                }
+                else
+                {
+                    // Not sure someone will ever receive this..
+                    await context.Response.WriteAsync("Web socket is not open");
+                }
+            }
+            else
+            {
+                // Not sure someone will ever receive this..
+                await context.Response.WriteAsync("AcceptWebSocketAsync returned null");
+            }
+
+            return new RouteResult();
+        }
+
         private async Task SendAndReceiveMessageWait(string messageHandlerName, string inputText, IClientConnected clientConnected, IMessagePipeline pipeline)
         {
-            var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
+            var messageHandler = this.GetMessageHandler(messageHandlerName);
 
             if (messageHandler != null)
             {
@@ -113,9 +199,15 @@
             }
         }
 
-        private async Task SendAndReceiveMessageWait(string messageHandlerName, Stream inputStream, IClientConnected clientConnected, IMessagePipeline pipeline)
+        private IMessageHandler GetMessageHandler(string messageHandlerName)
         {
             var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
+            return messageHandler;
+        }
+
+        private async Task SendAndReceiveMessageWait(string messageHandlerName, Stream inputStream, IClientConnected clientConnected, IMessagePipeline pipeline)
+        {
+            var messageHandler = this.GetMessageHandler(messageHandlerName);
 
             if (messageHandler != null)
             {
@@ -130,26 +222,26 @@
         {
             this.messageHandlerContainer.AddMessageHandler(
                 messageHandlerName,
-                await this.messageHandlerFactory.CreateQueue(messageHandlerName).ConfigureAwait(false));
+                await this.messageHandlerProducer.QueueFactory.Create(messageHandlerName).ConfigureAwait(false));
         }
 
         private async Task CreateBus(string busName)
         {
             this.messageHandlerContainer.AddMessageHandler(
                 busName,
-                await this.messageHandlerFactory.CreateBus(busName));
+                await this.messageHandlerProducer.BusFactory.Create(busName));
         }
 
         private async Task CreateApplication(string applicationName)
         {
             this.messageHandlerContainer.AddMessageHandler(
                 applicationName,
-                await this.messageHandlerFactory.CreateApplication(applicationName).ConfigureAwait(false));
+                await this.messageHandlerProducer.ApplicationFactory.Create(applicationName).ConfigureAwait(false));
         }
 
         private async Task ProcessAddSimple(string messageHandlerName, string message)
         {
-            var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
+            var messageHandler = this.GetMessageHandler(messageHandlerName);
 
             if (messageHandler != null)
             {
@@ -168,7 +260,7 @@
 
         private Task SendAndReceiveAwait(string messageHandlerName, IMessage messageToSend, IClientConnected clientConnected, IMessagePipeline pipeline)
         {
-            var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
+            var messageHandler = this.GetMessageHandler(messageHandlerName);
             return SendAndReceiveAwait(messageHandler, messageToSend, clientConnected, pipeline);
         }
 
@@ -217,7 +309,7 @@
 
         private Task ProcessGet(string messageHandlerName, IMessagePipeline pipeline)
         {
-            var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
+            var messageHandler = this.GetMessageHandler(messageHandlerName);
             var message = messageHandler.ReceiveMessageOrNull();
 
             if (message != null)
@@ -230,7 +322,7 @@
 
         private async Task ProcessAdd(string messageHandlerName, IHeaderDictionary headers, Stream inputStream)
         {
-            var messageHandler = this.messageHandlerContainer.GetMessageHandler(messageHandlerName);
+            var messageHandler = this.GetMessageHandler(messageHandlerName);
 
             if (messageHandler != null)
             {

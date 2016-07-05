@@ -1,10 +1,8 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MiniMQ.Core.Test
 {
     using MiniMQ.Core.Routing;
-    using MiniMQ.Routing;
 
     [TestClass]
     public class PathActionParserTest
@@ -14,20 +12,20 @@ namespace MiniMQ.Core.Test
         {
             var parser = new PathActionParser(PathActionMap.Items);
 
-            var item = parser.GetPathAction("/add/123");
+            var item = parser.GetPathAction("/snd/123");
             Assert.AreEqual(PathAction.SendMessage, item.PathAction);
 
-            item = parser.GetPathAction("/add/");
+            item = parser.GetPathAction("/snd/");
             Assert.AreEqual(PathAction.SendMessage, item.PathAction);
 
-            item = parser.GetPathAction("/get/");
+            item = parser.GetPathAction("/rcv/");
             Assert.AreEqual(PathAction.ReceiveMessage, item.PathAction);
 
-            item = parser.GetPathAction("/getw/");
+            item = parser.GetPathAction("/rcw/");
             Assert.AreEqual(PathAction.ReceiveMessageWait, item.PathAction);
 
-            item = parser.GetPathAction("/getw/flaskhals");
-            Assert.AreEqual(PathAction.ReceiveMessageWait, item.PathAction);
+            item = parser.GetPathAction("/srw/flaskhals");
+            Assert.AreEqual(PathAction.SendAndReceiveMessageWait, item.PathAction);
 
         }
     }

@@ -7,13 +7,13 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace MiniMQ.Core.MessageHandler
+namespace MiniMQ.Model.Core.MessageHandler
 {
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
-    using MiniMQ.Core.Message;
+    using MiniMQ.Model.Core.Message;
 
     /// <summary>
     /// The MessageHandler interface.
@@ -25,7 +25,9 @@ namespace MiniMQ.Core.MessageHandler
         /// <summary>
         /// Gets a value indicating whether can send and receive message.
         /// </summary>
-        bool CanSendAndReceiveMessage { get; }
+        bool SupportsSendAndReceiveMessage { get; }
+
+        bool SupportsWebSocketConnections { get; }
 
         /// <summary>
         /// The get message factory.
@@ -75,5 +77,7 @@ namespace MiniMQ.Core.MessageHandler
         /// The <see cref="Task"/>.
         /// </returns>
         Task SendMessage(IMessage message);
+
+
     }
 }

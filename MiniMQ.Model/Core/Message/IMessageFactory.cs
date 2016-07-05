@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniMQ.Core.Message
+﻿namespace MiniMQ.Model.Core.Message
 {
     using System.IO;
+    using System.Threading.Tasks;
 
     public interface IMessageFactory
     {

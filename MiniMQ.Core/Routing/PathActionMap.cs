@@ -14,6 +14,9 @@
                 new PathActionMapItem("/rcv/", PathAction.ReceiveMessage),
                 new PathActionMapItem("/rcw/", PathAction.ReceiveMessageWait),
                 new PathActionMapItem("/srw/", PathAction.SendAndReceiveMessageWait),
+
+                new PathActionMapItem("/wsc/", PathAction.WebSocketConnect),
+
             };
     }
 }

@@ -28,5 +28,7 @@
         // For applications and buses
         SendAndReceiveMessageWait,
 
+        // q, a & b
+        WebSocketConnect
     }
 }

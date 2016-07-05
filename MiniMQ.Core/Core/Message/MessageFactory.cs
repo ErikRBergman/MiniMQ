@@ -7,6 +7,7 @@
 
     using MiniMQ.Core.Core.Stream;
     using MiniMQ.Core.Message.Pool;
+    using MiniMQ.Model.Core.Message;
 
     public class MessageFactory : IMessageFactory
     {

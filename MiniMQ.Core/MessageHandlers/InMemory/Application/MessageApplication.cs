@@ -1,20 +1,18 @@
-﻿namespace MiniMQ.MessageHandlers.Application
+﻿namespace MiniMQ.Core.MessageHandlers.InMemory.Application
 {
     using System;
     using System.Collections.Concurrent;
     using System.Threading;
     using System.Threading.Tasks;
 
-    using MiniMQ.Core.Message;
-    using MiniMQ.Core.MessageHandler;
+    using MiniMQ.Model.Core.Message;
+    using MiniMQ.Model.Core.MessageHandler;
 
     public class MessageApplication : IMessageHandler
     {
         private readonly IMessageFactory messageFactory;
 
         private readonly SemaphoreSlim semaphore = new SemaphoreSlim(0);
-
-        //private readonly ObjectPool<PooledSemaphoreSlim> semaphorePool = new ObjectPool<PooledSemaphoreSlim>(10000);
 
         private readonly ConcurrentQueue<IMessage> requestMessages = new ConcurrentQueue<IMessage>();
 
@@ -41,7 +39,9 @@
 
         public string Name { get; }
 
-        public bool CanSendAndReceiveMessage => true;
+        public bool SupportsSendAndReceiveMessage => true;
+
+        public bool SupportsWebSocketConnections => true;
 
         public IMessageFactory GetMessageFactory()
         {
@@ -63,18 +63,6 @@
         {
             throw new NotImplementedException();
         }
-
-        //private PooledSemaphoreSlim GetPooledSemaphoreSlim(int initialCount)
-        //{
-        //    var semaphore = this.semaphorePool.GetNewObject(() => new PooledSemaphoreSlim(initialCount));
-
-        //    if (semaphore.Count != initialCount)
-        //    {
-        //        semaphore.Count = initialCount;
-        //    }
-            
-        //    return semaphore;
-        //}
 
         public async Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken)
         {

@@ -3,6 +3,8 @@
     "Microsoft.AspNetCore.Mvc": "1.0.0",
     "Microsoft.AspNetCore.Server.IISIntegration": "1.0.0",
     "Microsoft.AspNetCore.Server.Kestrel": "1.0.0",
+    "Microsoft.AspNetCore.WebSockets.Protocol": "0.1.0",
+    "Microsoft.AspNetCore.WebSockets.Server": "0.1.0",
     "Microsoft.Extensions.Configuration.EnvironmentVariables": "1.0.0",
     "Microsoft.Extensions.Configuration.FileExtensions": "1.0.0",
     "Microsoft.Extensions.Configuration.Json": "1.0.0",
@@ -10,6 +12,7 @@
     "Microsoft.Extensions.Logging.Console": "1.0.0",
     "Microsoft.Extensions.Logging.Debug": "1.0.0",
     "Microsoft.Extensions.Options.ConfigurationExtensions": "1.0.0"
+    //    "Microsoft.AspNet.WebSockets.Server": "1.0.0-rc1-final"
   },
 
   "tools": {
@@ -20,6 +23,9 @@
     "net461": {
       "dependencies": {
         "MiniMQ.Core": {
+          "target": "project"
+        },
+        "MiniMQ.Model": {
           "target": "project"
         }
       }

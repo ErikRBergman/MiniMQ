@@ -7,7 +7,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace MiniMQ.MessageHandlers.Queue
+namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
 {
     using System;
     using System.Collections.Concurrent;
@@ -15,13 +15,13 @@ namespace MiniMQ.MessageHandlers.Queue
     using System.Threading;
     using System.Threading.Tasks;
 
-    using MiniMQ.Core.Message;
-    using MiniMQ.Core.MessageHandler;
+    using MiniMQ.Model.Core.Message;
+    using MiniMQ.Model.Core.MessageHandler;
 
     /// <summary>
     /// The message queue.
     /// </summary>
-    internal class MessageQueue : IMessageHandler
+    internal class InMemoryMessageQueue : IMessageHandler
     {
         private readonly IMessageFactory messageFactory;
 
@@ -40,9 +40,11 @@ namespace MiniMQ.MessageHandlers.Queue
         /// <summary>
         /// The can send and receive message.
         /// </summary>
-        public bool CanSendAndReceiveMessage => false;
+        public bool SupportsSendAndReceiveMessage => false;
 
-        public MessageQueue(IMessageFactory messageFactory, string name)
+        public bool SupportsWebSocketConnections => true;
+
+        public InMemoryMessageQueue(IMessageFactory messageFactory, string name)
         {
             this.Name = name;
             this.messageFactory = messageFactory;

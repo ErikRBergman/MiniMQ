@@ -5,6 +5,8 @@ namespace MiniMQ.Core.Message
     using System.IO;
     using System.Threading.Tasks;
 
+    using MiniMQ.Model.Core.Message;
+
     public class Message : IMessage
     {
         private readonly Stream stream;

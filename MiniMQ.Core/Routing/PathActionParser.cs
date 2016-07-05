@@ -1,6 +1,7 @@
 ﻿namespace MiniMQ.Core.Routing
 {
     using System;
+    using System.Collections;
 
     public class PathActionParser
     {
@@ -17,9 +18,23 @@
             {
                 throw new NotImplementedException("This implementation is limited to 64 action map items");
             }
+
+            this.SetMinimumLength();
+        }
+
+        private void SetMinimumLength()
+        {
+            this.MinimumPathLength = int.MaxValue;
+
+            foreach (var item in this.pathActionMap)
+            {
+                this.MinimumPathLength = Math.Min(item.Path.Length, this.MinimumPathLength);
+            }
         }
 
         private static PathActionMapItem PathActionUnknown = new PathActionMapItem(string.Empty, PathAction.Unknown);
+
+        public int MinimumPathLength { get; private set; }
 
         public PathActionMapItem GetPathAction(string path)
         {

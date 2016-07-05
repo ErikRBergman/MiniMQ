@@ -1,4 +1,4 @@
-namespace MiniMQ.Core.Core
+namespace MiniMQ.Model.Core.MessageHandler
 {
     public interface IClientConnected
     {

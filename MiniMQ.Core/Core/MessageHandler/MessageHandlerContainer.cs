@@ -3,6 +3,8 @@
     using System;
     using System.Collections.Concurrent;
 
+    using MiniMQ.Model.Core.MessageHandler;
+
     public class MessageHandlerContainer : IMessageHandlerContainer
     {
         /// <summary>

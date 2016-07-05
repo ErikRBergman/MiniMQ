@@ -1,4 +1,4 @@
-﻿namespace MiniMQ.Core.MessageHandler
+﻿namespace MiniMQ.Model.Core.MessageHandler
 {
     public interface IMessageHandlerContainer
     {
