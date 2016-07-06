@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\ConcurrentList.cs" />
     <Compile Include="Core\ILog.cs" />
     <Compile Include="Core\MessageHandler\IClientConnected.cs" />
     <Compile Include="Core\MessageHandler\IMessageHandler.cs" />

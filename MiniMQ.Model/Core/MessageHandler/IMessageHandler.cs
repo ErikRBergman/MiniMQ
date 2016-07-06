@@ -65,7 +65,7 @@ namespace MiniMQ.Model.Core.MessageHandler
         /// <returns>
         /// The <see cref="Task"/>.
         /// </returns>
-        Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken);
+        Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken);
 
         /// <summary>
         /// The send message.

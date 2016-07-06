@@ -1,5 +1,6 @@
 namespace MiniMQ.Core.MessageHandlers.General
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -17,15 +18,29 @@ namespace MiniMQ.Core.MessageHandlers.General
             this.webSocketClient = webSocketClient;
         }
 
-        public Task SendMessageAsync(IMessage message)
+        public async Task<bool> SendMessageAsync(IMessage message)
         {
-            if (this.webSocketClient.IsConnected)
+            try
             {
-                return this.webSocketClient.SendMessageAsync(message, CancellationToken.None);
+                if (this.webSocketClient.IsConnected)
+                {
+                    await this.webSocketClient.SendMessageAsync(message, CancellationToken.None);
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                // Error in message delivery, return to the queue
+                await this.messageHandler.SendMessageAsync(message);
+                throw;
             }
 
             // Client is no longer connected - post the message back to the queue
-            return this.messageHandler.SendMessageAsync(message);
+            await this.messageHandler.SendMessageAsync(message);
+
+
+            // TODO: Figure out if this is really true and if we should remove the line sending the message back to the queue
+            return false;
         }
     }
 }

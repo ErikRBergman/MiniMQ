@@ -10,7 +10,7 @@
 
     using MiniMQ.Core.Core;
     using MiniMQ.Core.Message;
-    using MiniMQ.Core.MessageHandler;
+    using MiniMQ.Core.MessageHandlers.General;
     using MiniMQ.Core.Routing;
     using MiniMQ.Model.Core.Message;
     using MiniMQ.Model.Core.MessageHandler;
@@ -21,12 +21,13 @@
 
         private readonly IMessageHandlerProducer messageHandlerProducer;
 
-        public Router(
-            IMessageHandlerContainer messageHandlerContainer,
-            IMessageHandlerProducer messageHandlerProducer)
+        private readonly IHealthChecker healthChecker;
+
+        public Router(IMessageHandlerContainer messageHandlerContainer, IMessageHandlerProducer messageHandlerProducer, IHealthChecker healthChecker)
         {
             this.messageHandlerContainer = messageHandlerContainer;
             this.messageHandlerProducer = messageHandlerProducer;
+            this.healthChecker = healthChecker;
         }
 
         public static readonly Task<RouteResult> RouteFailedTask = Task.FromResult(new RouteResult { Description = "Routing failed" });
@@ -167,7 +168,11 @@
             {
                 if (webSocket.State == WebSocketState.Open)
                 {
-                    messageHandler.RegisterWebSocket(new WebSocketClient(webSocket));
+                    var client = new WebSocketClient(webSocket);
+
+                    this.healthChecker.Add(client);
+
+                    messageHandler.RegisterWebSocket(client);
                 }
                 else
                 {

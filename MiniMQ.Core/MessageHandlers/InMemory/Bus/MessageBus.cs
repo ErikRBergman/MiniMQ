@@ -30,7 +30,7 @@
             throw new NotImplementedException();
         }
 
-        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

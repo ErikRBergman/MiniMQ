@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\IHealthCheck.cs" />
     <Compile Include="Core\MessageHandler\MessageHandlerContainer.cs" />
     <Compile Include="Core\MessageHandler\MessageHandlerProducer.cs" />
     <Compile Include="Core\Message\Message.cs" />
@@ -56,12 +57,17 @@
     <Compile Include="Core\Stream\PartitionedByteStream.cs" />
     <Compile Include="Core\Stream\QueueBridge.cs" />
     <Compile Include="Core\Stream\StreamExtensions.cs" />
-    <Compile Include="Core\WebSocketClient.cs" />
-    <Compile Include="MessageHandlers\General\WebSocketClientQueueSubscriber.cs" />
+    <Compile Include="MessageHandlers\General\WebSocketClient.cs" />
+    <Compile Include="MessageHandlers\General\IWebSocketSubscriber.cs" />
+    <Compile Include="MessageHandlers\General\IWebSocketSubscriberFactory.cs" />
+    <Compile Include="MessageHandlers\General\WebSocketSubscriberFactory.cs" />
+    <Compile Include="MessageHandlers\General\WebSubscriberSettings.cs" />
+    <Compile Include="MessageHandlers\General\WebSocketSubscriber.cs" />
     <Compile Include="MessageHandlers\General\WebSocketCollection.cs" />
     <Compile Include="MessageHandlers\General\WebSocketDestinationMessagePipeline.cs" />
     <Compile Include="MessageHandlers\InMemory\Application\MessageApplication.cs" />
     <Compile Include="MessageHandlers\InMemory\Application\MessageApplicationFactory.cs" />
+    <Compile Include="MessageHandlers\InMemory\Application\MessageApplicationWebSocketServiceCollection.cs" />
     <Compile Include="MessageHandlers\InMemory\Bus\MessageBus.cs" />
     <Compile Include="MessageHandlers\InMemory\Bus\MessageBusFactory.cs" />
     <Compile Include="MessageHandlers\InMemory\Queue\InMemoryMessageQueue.cs" />

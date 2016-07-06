@@ -60,7 +60,7 @@ namespace MiniMQ.Core.Core.Message.Pool
             throw new NotImplementedException();
         }
 
-        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -93,12 +93,12 @@ namespace MiniMQ.Core.Core.Message.Pool
                 this.messageNumber = messageNumber;
             }
 
-            public async Task SendMessageAsync(IMessage message)
+            public async Task<bool> SendMessageAsync(IMessage message)
             {
                 try
                 {
                     this.log.Log(LogType.Verbose, "IMessagePipeline: " + this.actionName + ": SendMessage, before call " + message.UniqueIdentifier);
-                    await this.innerMessagePipeline.SendMessageAsync(message);
+                    return (await this.innerMessagePipeline.SendMessageAsync(message));
                 }
                 catch (Exception exception)
                 {
@@ -108,6 +108,8 @@ namespace MiniMQ.Core.Core.Message.Pool
                 {
                     this.log.Log(LogType.Verbose, "IMessagePipeline: " + this.actionName + ": SendMessage done" + message.UniqueIdentifier);
                 }
+
+                return false;
             }
         }
     }

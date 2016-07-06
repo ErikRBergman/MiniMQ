@@ -15,5 +15,7 @@ namespace MiniMQ.Model.Core.MessageHandler
         bool IsConnected { get; }
 
         Task SendMessageAsync(IMessage message, CancellationToken cancellationToken);
+
+        Task WaitDisconnectAsync();
     }
 }

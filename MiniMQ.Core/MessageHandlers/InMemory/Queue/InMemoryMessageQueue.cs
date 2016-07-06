@@ -26,6 +26,8 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
     {
         private readonly IMessageFactory messageFactory;
 
+        private readonly IWebSocketSubscriberFactory webSocketSubscriberFactory;
+
         /// <summary>
         /// The messages.
         /// </summary>
@@ -45,10 +47,14 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
 
         public bool SupportsWebSocketConnections => true;
 
-        public InMemoryMessageQueue(IMessageFactory messageFactory, string name)
+        public InMemoryMessageQueue(
+            string name, 
+            IMessageFactory messageFactory,
+            IWebSocketSubscriberFactory webSocketSubscriberFactory)
         {
             this.Name = name;
             this.messageFactory = messageFactory;
+            this.webSocketSubscriberFactory = webSocketSubscriberFactory;
         }
 
         public IMessageFactory GetMessageFactory()
@@ -96,7 +102,7 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
             return null;
         }
 
-        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException("Message queues do not support send and receive");
         }
@@ -135,9 +141,12 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
 
         public void RegisterWebSocket(IWebSocketClient webSocketClient)
         {
-                           
-            var subscriber = new WebSocketClientQueueSubscriber(this, webSocketClient);
+            // No keeping track on the clients yet...               
+
+            IWebSocketSubscriber subscriber = this.webSocketSubscriberFactory.CreateSubscriber(this, webSocketClient);
             subscriber.Subscribe();
+
+            //subscriber.Subscribe();
         }
 
         /// <summary>

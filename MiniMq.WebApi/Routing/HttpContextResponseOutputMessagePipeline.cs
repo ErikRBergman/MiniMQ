@@ -22,11 +22,11 @@ namespace MiniMQ.Core.Message
             this.httpContext = httpContext;
         }
 
-        public async Task SendMessageAsync(IMessage message)
+        public async Task<bool> SendMessageAsync(IMessage message)
         {
             if (this.httpContext.RequestAborted.IsCancellationRequested)
             {
-                return;
+                return false;
             }
 
             var stream = await message.GetStream();
@@ -45,6 +45,8 @@ namespace MiniMQ.Core.Message
                     await stream.CopyToAsync(this.httpContext.Response.Body);
                 }
             }
+
+            return true;
         }
     }
 }

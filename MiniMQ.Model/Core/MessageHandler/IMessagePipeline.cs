@@ -6,6 +6,6 @@
 
     public interface IMessagePipeline
     {
-        Task SendMessageAsync(IMessage message);
+        Task<bool> SendMessageAsync(IMessage message);
     }
 }

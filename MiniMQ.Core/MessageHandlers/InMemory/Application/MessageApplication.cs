@@ -5,12 +5,15 @@
     using System.Threading;
     using System.Threading.Tasks;
 
-    using MiniMQ.Model.Core.Message;
-    using MiniMQ.Model.Core.MessageHandler;
+    using General;
+    using Model.Core.Message;
+    using Model.Core.MessageHandler;
 
     public class MessageApplication : IMessageHandler
     {
         private readonly IMessageFactory messageFactory;
+
+        private readonly IWebSocketSubscriberFactory webSocketSubscriberFactory;
 
         private readonly SemaphoreSlim semaphore = new SemaphoreSlim(0);
 
@@ -18,22 +21,26 @@
 
         private struct RequestWaiter
         {
-            public RequestWaiter(SemaphoreSlim waiter, IMessage message)
+            public RequestWaiter(SemaphoreSlim waiter, IMessagePipeline pipeline, IMessage message = null)
             {
                 this.Waiter = waiter;
                 this.Message = message;
+                this.Pipeline = pipeline;
             }
 
-            public SemaphoreSlim Waiter;
+            public readonly SemaphoreSlim Waiter;
 
             public IMessage Message;
+
+            public IMessagePipeline Pipeline { get; }
         }
 
         private readonly ConcurrentDictionary<string, RequestWaiter> requestWaiters = new ConcurrentDictionary<string, RequestWaiter>();
 
-        public MessageApplication(IMessageFactory messageFactory, string name)
+        public MessageApplication(string name, IMessageFactory messageFactory, IWebSocketSubscriberFactory webSocketSubscriberFactory)
         {
             this.messageFactory = messageFactory;
+            this.webSocketSubscriberFactory = webSocketSubscriberFactory;
             this.Name = name;
         }
 
@@ -64,15 +71,13 @@
             throw new NotImplementedException();
         }
 
-        public async Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public async Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
-            //var source = GetPooledSemaphoreSlim(0);
-
             var source = new SemaphoreSlim(0);
 
             var uniqueId = message.UniqueIdentifier;
 
-            this.requestWaiters.TryAdd(uniqueId, new RequestWaiter(source, null));
+            this.requestWaiters.TryAdd(uniqueId, new RequestWaiter(source, returnMessagePipeline));
             this.requestMessages.Enqueue(message);
 
             this.semaphore.Release();
@@ -86,19 +91,20 @@
             catch (Exception)
             {
                 this.requestWaiters.TryRemove(uniqueId, out waiter);
-                //this.semaphorePool.ReturnObject(waiter.Waiter);
                 throw;
             }
 
             if (this.requestWaiters.TryRemove(uniqueId, out waiter))
             {
-                //this.semaphorePool.ReturnObject(waiter.Waiter);
-                await pipeline.SendMessageAsync(waiter.Message);
+                if (waiter.Message != null)
+                {
+                    await returnMessagePipeline.SendMessageAsync(waiter.Message);
+                }
             }
 
         }
 
-        public Task SendMessageAsync(IMessage message)
+        public async Task SendMessageAsync(IMessage message)
         {
             var uniqueId = message.UniqueIdentifier;
 
@@ -106,23 +112,37 @@
 
             if (this.requestWaiters.TryGetValue(uniqueId, out waiter))
             {
-                waiter.Message = message;
-                // Since waiter is a struct, we need to replace it in the dictionary
-                this.requestWaiters[uniqueId] = waiter;
+                var pipeline = waiter.Pipeline;
+
+                if (pipeline != null)
+                {
+                    await pipeline.SendMessageAsync(message);
+                }
+                else
+                {
+                    waiter.Message = message;
+                    // Since waiter is a struct, we need to replace it in the dictionary
+                    this.requestWaiters[uniqueId] = waiter;
+                }
 
                 waiter.Waiter.Release();
-
-                return Task.CompletedTask;
             }
 
+            // Message was sent to the application without the need for a response - fire and forget
             this.requestMessages.Enqueue(message);
             this.semaphore.Release();
 
-            return Task.CompletedTask;
         }
 
         public void RegisterWebSocket(IWebSocketClient webSocketClient)
         {
+            // At this point, only servers can connect with web sockets
+
+            var subscriber = this.webSocketSubscriberFactory.CreateSubscriber(this, webSocketClient);
+
+            subscriber.Subscribe();
+
+
             throw new NotImplementedException();
         }
     }

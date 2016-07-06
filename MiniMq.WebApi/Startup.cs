@@ -9,23 +9,14 @@
     using Microsoft.Extensions.Logging;
 
     using Microsoft.AspNetCore.Http;
-    using Microsoft.Extensions.Primitives;
 
     using Routing;
 
-    using MiniMQ.Core.Message;
-    using MiniMQ.Core.MessageHandler;
-    using MiniMQ.Core.MessageHandlers.InMemory.Application;
-    using MiniMQ.Core.MessageHandlers.InMemory.Bus;
-    using MiniMQ.Core.MessageHandlers.InMemory.Queue;
     using MiniMQ.Core.Routing;
-    using MiniMQ.Model.Core.MessageHandler;
 
     public class Startup
     {
-        private static readonly IMessageHandlerContainer MessageHandlerContainer = new MessageHandlerContainer();
-        private static readonly IMessageHandlerProducer MessageHandlerProducer = new MessageHandlerProducer(new MessageQueueFactory(new MessageFactory()), new MessageApplicationFactory(new MessageFactory()), new MessageBusFactory());
-        private static readonly Router Router = new Router(MessageHandlerContainer, MessageHandlerProducer);
+        private readonly Application application = new Application();
 
         public Startup(IHostingEnvironment env)
         {
@@ -42,9 +33,7 @@
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Add framework services.
-            // services.AddMvc();
-            // services.AddRouting();
+            this.application.Startup(services);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -57,14 +46,13 @@
             }
 
             app.UseWebSockets();
-
             app.Run(this.Handler);
         }
 
 
         private Task Handler(HttpContext context)
         {
-            var routerResult = Router.RouteCall(context, context.Request.Path);
+            var routerResult = this.application.Router.RouteCall(context, context.Request.Path);
 
             var routingResult = routerResult as Task<Router.RouteResult>;
             if (routingResult != null)
