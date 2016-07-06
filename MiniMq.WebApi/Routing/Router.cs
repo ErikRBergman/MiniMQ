@@ -163,27 +163,22 @@
         {
             var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-            return new RouteResult("Error in the connection...");
-
             if (webSocket != null)
             {
                 if (webSocket.State == WebSocketState.Open)
                 {
-
+                    messageHandler.RegisterWebSocket(new WebSocketClient(webSocket));
                 }
                 else
                 {
                     // Not sure someone will ever receive this..
-                    await context.Response.WriteAsync("Web socket is not open");
+                    return new RouteResult("Web socket is not open");
                 }
             }
-            else
-            {
-                // Not sure someone will ever receive this..
-                await context.Response.WriteAsync("AcceptWebSocketAsync returned null");
-            }
 
-            return new RouteResult();
+            // Not sure someone will ever receive this..
+            return new RouteResult("AcceptWebSocketAsync returned null");
+
         }
 
         private async Task SendAndReceiveMessageWait(string messageHandlerName, string inputText, IClientConnected clientConnected, IMessagePipeline pipeline)
@@ -246,7 +241,7 @@
             if (messageHandler != null)
             {
                 var messageFactory = messageHandler.GetMessageFactory();
-                await messageHandler.SendMessage(await messageFactory.CreateMessage(message).ConfigureAwait(false)).ConfigureAwait(false);
+                await messageHandler.SendMessageAsync(await messageFactory.CreateMessage(message).ConfigureAwait(false)).ConfigureAwait(false);
                 return;
             }
 
@@ -314,7 +309,7 @@
 
             if (message != null)
             {
-                return pipeline.SendMessage(message);
+                return pipeline.SendMessageAsync(message);
             }
 
             return Task.CompletedTask;
@@ -341,7 +336,7 @@
                     message = await messageFactory.CreateMessage(inputStream).ConfigureAwait(false);
                 }
 
-                await messageHandler.SendMessage(message).ConfigureAwait(false);
+                await messageHandler.SendMessageAsync(message).ConfigureAwait(false);
                 return;
             }
 

@@ -55,6 +55,11 @@
     <Compile Include="Core\Stream\IQueue.cs" />
     <Compile Include="Core\Stream\PartitionedByteStream.cs" />
     <Compile Include="Core\Stream\QueueBridge.cs" />
+    <Compile Include="Core\Stream\StreamExtensions.cs" />
+    <Compile Include="Core\WebSocketClient.cs" />
+    <Compile Include="MessageHandlers\General\WebSocketClientQueueSubscriber.cs" />
+    <Compile Include="MessageHandlers\General\WebSocketCollection.cs" />
+    <Compile Include="MessageHandlers\General\WebSocketDestinationMessagePipeline.cs" />
     <Compile Include="MessageHandlers\InMemory\Application\MessageApplication.cs" />
     <Compile Include="MessageHandlers\InMemory\Application\MessageApplicationFactory.cs" />
     <Compile Include="MessageHandlers\InMemory\Bus\MessageBus.cs" />

@@ -76,8 +76,8 @@ namespace MiniMQ.Model.Core.MessageHandler
         /// <returns>
         /// The <see cref="Task"/>.
         /// </returns>
-        Task SendMessage(IMessage message);
+        Task SendMessageAsync(IMessage message);
 
-
+        void RegisterWebSocket(IWebSocketClient webSocketClient);
     }
 }

@@ -22,7 +22,7 @@ namespace MiniMQ.Core.Message
             this.httpContext = httpContext;
         }
 
-        public async Task SendMessage(IMessage message)
+        public async Task SendMessageAsync(IMessage message)
         {
             if (this.httpContext.RequestAborted.IsCancellationRequested)
             {

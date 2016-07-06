@@ -65,7 +65,12 @@ namespace MiniMQ.Core.Core.Message.Pool
             throw new NotImplementedException();
         }
 
-        public Task SendMessage(IMessage message)
+        public Task SendMessageAsync(IMessage message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RegisterWebSocket(IWebSocketClient webSocketClient)
         {
             throw new NotImplementedException();
         }
@@ -88,12 +93,12 @@ namespace MiniMQ.Core.Core.Message.Pool
                 this.messageNumber = messageNumber;
             }
 
-            public async Task SendMessage(IMessage message)
+            public async Task SendMessageAsync(IMessage message)
             {
                 try
                 {
                     this.log.Log(LogType.Verbose, "IMessagePipeline: " + this.actionName + ": SendMessage, before call " + message.UniqueIdentifier);
-                    await this.innerMessagePipeline.SendMessage(message);
+                    await this.innerMessagePipeline.SendMessageAsync(message);
                 }
                 catch (Exception exception)
                 {

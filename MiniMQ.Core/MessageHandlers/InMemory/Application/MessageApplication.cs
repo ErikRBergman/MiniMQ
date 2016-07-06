@@ -56,7 +56,7 @@
             // this will only fail if there is a bug in the program
             this.requestMessages.TryDequeue(out message);
 
-            await pipeline.SendMessage(message);
+            await pipeline.SendMessageAsync(message);
         }
 
         public IMessage ReceiveMessageOrNull()
@@ -93,12 +93,12 @@
             if (this.requestWaiters.TryRemove(uniqueId, out waiter))
             {
                 //this.semaphorePool.ReturnObject(waiter.Waiter);
-                await pipeline.SendMessage(waiter.Message);
+                await pipeline.SendMessageAsync(waiter.Message);
             }
 
         }
 
-        public Task SendMessage(IMessage message)
+        public Task SendMessageAsync(IMessage message)
         {
             var uniqueId = message.UniqueIdentifier;
 
@@ -119,6 +119,11 @@
             this.semaphore.Release();
 
             return Task.CompletedTask;
+        }
+
+        public void RegisterWebSocket(IWebSocketClient webSocketClient)
+        {
+            throw new NotImplementedException();
         }
     }
 }

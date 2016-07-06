@@ -45,6 +45,7 @@
     <Compile Include="Core\MessageHandler\IMessageHandler.cs" />
     <Compile Include="Core\MessageHandler\IMessageHandlerContainer.cs" />
     <Compile Include="Core\MessageHandler\IMessageHandlerFactory.cs" />
+    <Compile Include="Core\MessageHandler\IWebSocketClient.cs" />
     <Compile Include="Core\Message\IMessage.cs" />
     <Compile Include="Core\Message\IMessageFactory.cs" />
     <Compile Include="Core\MessageHandler\IMessagePipeline.cs" />

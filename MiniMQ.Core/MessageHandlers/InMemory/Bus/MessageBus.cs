@@ -35,7 +35,12 @@
             throw new NotImplementedException();
         }
 
-        public Task SendMessage(IMessage message)
+        public Task SendMessageAsync(IMessage message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RegisterWebSocket(IWebSocketClient webSocketClient)
         {
             throw new NotImplementedException();
         }

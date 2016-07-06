@@ -15,6 +15,7 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
     using System.Threading;
     using System.Threading.Tasks;
 
+    using MiniMQ.Core.MessageHandlers.General;
     using MiniMQ.Model.Core.Message;
     using MiniMQ.Model.Core.MessageHandler;
 
@@ -72,7 +73,7 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
 
             // this will only fail if there is a bug in the program
             this.messages.TryDequeue(out message);
-            await pipeline.SendMessage(message);
+            await pipeline.SendMessageAsync(message);
         }
 
         /// <summary>
@@ -125,11 +126,18 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
         /// <returns>
         /// The <see cref="Task"/>.
         /// </returns>
-        public Task SendMessage(IMessage message)
+        public Task SendMessageAsync(IMessage message)
         {
             this.messages.Enqueue(message);
             this.semaphore.Release(1);
             return Task.CompletedTask;
+        }
+
+        public void RegisterWebSocket(IWebSocketClient webSocketClient)
+        {
+                           
+            var subscriber = new WebSocketClientQueueSubscriber(this, webSocketClient);
+            subscriber.Subscribe();
         }
 
         /// <summary>
