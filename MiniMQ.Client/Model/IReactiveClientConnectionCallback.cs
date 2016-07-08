@@ -8,7 +8,7 @@ namespace MiniMQ.Client.Model
 {
     using MiniMQ.Client.Implementation;
 
-    internal interface IReactiveClientConnection
+    internal interface IReactiveClientConnectionCallback
     {
         void MessageReceiveDone(ReactiveClientInputStream stream);
     }

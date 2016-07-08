@@ -8,7 +8,7 @@ namespace MiniMQ.Client
 
     public interface IClient
     {
-        Task ConnectToServer(System.Uri serverUri, IReactiveConnection reactiveConnection, CancellationToken cancellationToken);
+        Task<IClientConnection> ConnectToServer(System.Uri serverUri, IReactiveConnection reactiveConnection, CancellationToken cancellationToken);
 
         Task<IClientConnection> ConnectToServer(System.Uri serverUri, CancellationToken cancellationToken);
 

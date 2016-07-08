@@ -8,36 +8,36 @@
 
     internal class ClientConnection : IClientConnection
     {
-        protected readonly ClientWebSocket clientWebSocket;
+        protected readonly WebSocket WebSocket;
 
-        public ClientConnection(ClientWebSocket clientWebSocket)
+        public ClientConnection(WebSocket webSocket)
         {
-            this.clientWebSocket = clientWebSocket;
+            this.WebSocket = webSocket;
         }
 
         public Task CloseAsync()
         {
-            return this.clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+            return this.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
         }
 
-        public Task SendAsync(ArraySegment<byte> data, MessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public virtual Task SendAsync(ArraySegment<byte> data, MessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
-            return this.clientWebSocket.SendAsync(data, MessageTypeConverter.ConvertToWebSocketMessageType(messageType), endOfMessage, cancellationToken);
+            return this.WebSocket.SendAsync(data, MessageTypeConverter.ConvertToWebSocketMessageType(messageType), endOfMessage, cancellationToken);
         }
 
         public async Task<ReceiveResult> ReceiveAsync(ArraySegment<byte> data, CancellationToken cancellationToken)
         {
-            return ResultConverter.ConvertToRecieveResult(await this.clientWebSocket.ReceiveAsync(data, cancellationToken));
+            return ResultConverter.ConvertToRecieveResult(await this.WebSocket.ReceiveAsync(data, cancellationToken));
         }
 
         public Stream GetOutputStream(bool bufferingStream = true)
         {
-            return new ClientOutputStream(this.clientWebSocket);
+            return new ClientOutputStream(this.WebSocket);
         }
 
         public Stream GetInputStream(bool bufferingStream = true)
         {
-            return new ClientInputStream(this.clientWebSocket);
+            return new WebSocketInputStream(this.WebSocket);
         }
     }
 }

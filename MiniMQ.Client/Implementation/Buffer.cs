@@ -2,7 +2,7 @@
 {
     using System;
 
-    internal struct Buffer
+    internal class Buffer
     {
         public Buffer(byte[] byteBuffer, int length)
         {
@@ -12,7 +12,9 @@
 
         public static Buffer CreateDefault()
         {
-             return new Buffer(new byte[1024], 0);
+            const int defaultSize = 1024;
+
+             return new Buffer(new byte[defaultSize], defaultSize);
         }
 
         public byte[] Contents { get; private set; }
@@ -39,6 +41,8 @@
             this.buffer = buffer;
             this.position = position;
         }
+
+        public bool IsEndOfStream => this.position >= this.buffer.Length;
 
         public struct ReadResult
         {

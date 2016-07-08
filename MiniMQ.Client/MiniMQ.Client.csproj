@@ -41,7 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Conversion\CloseStatusConverison.cs" />
+    <Compile Include="Implementation\ArraySegmentExtensions.cs" />
     <Compile Include="Implementation\Buffer.cs" />
+    <Compile Include="Implementation\IReactiveClientConnection.cs" />
     <Compile Include="Implementation\ReactiveClientInputStream.cs" />
     <Compile Include="Implementation\ReactiveClientConnection.cs" />
     <Compile Include="Model\CloseStatus.cs" />
@@ -54,9 +56,9 @@
     <Compile Include="Client.cs" />
     <Compile Include="Implementation\ClientConnection.cs" />
     <Compile Include="ClientConnectionExtensions.cs" />
-    <Compile Include="Implementation\ClientInputStream.cs" />
+    <Compile Include="Implementation\WebSocketInputStream.cs" />
     <Compile Include="Implementation\ClientOutputStream.cs" />
-    <Compile Include="Model\IReactiveClientConnection.cs" />
+    <Compile Include="Model\IReactiveClientConnectionCallback.cs" />
     <Compile Include="Model\Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Model\MessageType.cs" />

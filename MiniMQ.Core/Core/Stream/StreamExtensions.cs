@@ -8,7 +8,7 @@
 
     internal static class StreamExtensions
     {
-        public static async Task CopyToAsync(this Stream stream, WebSocket webSocket, CancellationToken cancellationToken)
+        public static async Task CopyToAsync(this System.IO.Stream stream, WebSocket webSocket, CancellationToken cancellationToken)
         {
             if (stream.CanSeek)
             {

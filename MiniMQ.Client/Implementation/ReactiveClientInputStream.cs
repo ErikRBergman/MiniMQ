@@ -7,7 +7,7 @@
     using MiniMQ.Client.Conversion;
     using MiniMQ.Client.Model;
 
-    internal class ReactiveClientInputStream : ClientInputStream
+    internal class ReactiveClientInputStream : WebSocketInputStream
     {
         /// <summary>
         /// The cancellation token.
@@ -17,7 +17,7 @@
         /// <summary>
         /// The reactive client connection.
         /// </summary>
-        private readonly IReactiveClientConnection reactiveClientConnection;
+        private readonly IReactiveClientConnectionCallback reactiveClientConnection;
 
         /// <summary>
         /// The reactive connection.
@@ -27,7 +27,7 @@
         /// <summary>
         /// The buffer.
         /// </summary>
-        private Buffer buffer = new Buffer();
+        private Buffer buffer = Buffer.CreateDefault();
 
         /// <summary>
         /// The buffer reader.
@@ -45,10 +45,10 @@
         private bool isFirstMessage = true;
 
         public ReactiveClientInputStream(
-            ClientWebSocket clientWebSocket, 
+            WebSocket webSocket, 
             IReactiveConnection reactiveConnection, 
-            IReactiveClientConnection reactiveClientConnection, 
-            CancellationToken cancellationToken) : base(clientWebSocket)
+            IReactiveClientConnectionCallback reactiveClientConnection, 
+            CancellationToken cancellationToken) : base(webSocket)
         {
             this.reactiveConnection = reactiveConnection;
             this.reactiveClientConnection = reactiveClientConnection;
@@ -57,16 +57,20 @@
             this.bufferReader = new BufferReader(this.buffer);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (this.isEndOfMessage)
             {
-                return Task.FromResult(0);
+                if (this.bufferReader.IsEndOfStream)
+                {
+                    return 0;
+                }
             }
 
             if (!this.isFirstMessage)
             {
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
+                var bytesRead = await base.ReadAsync(buffer, offset, count, cancellationToken);
+                return bytesRead;
             }
 
             var result = this.bufferReader.Read(buffer, offset, count);
@@ -76,7 +80,7 @@
                 this.isFirstMessage = false;
             }
 
-            return Task.FromResult(result.BytesRead);
+            return result.BytesRead;
         }
 
         public void StartReceiving()
@@ -86,17 +90,28 @@
 
         private async Task ReceiveNewMessage()
         {
-            var result = await this.ClientWebSocket.ReceiveAsync(this.buffer.AsArraySegment(), this.cancellationToken);
+            var result = await this.webSocket.ReceiveAsync(this.buffer.AsArraySegment(), this.cancellationToken);
+
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                this.reactiveConnection.OnConnectionClosed(CloseStatusConverison.ConvertToCloseStatus(result.CloseStatus.Value), result.CloseStatusDescription);
+                return;
+            }
+
+            if (result.EndOfMessage)
+            {
+                this.isEndOfMessage = true;
+            }
 
             this.buffer.Length = result.Count;
 
-            if (result.EndOfMessage || result.CloseStatus != null)
+            await this.reactiveConnection.OnMessageReceived(this);
+
+            if (result.EndOfMessage)
             {
                 this.isEndOfMessage = true;
                 this.reactiveClientConnection.MessageReceiveDone(this);
             }
-
-            await this.reactiveConnection.OnMessageReceived(this);
 
             if (result.CloseStatus != null)
             {

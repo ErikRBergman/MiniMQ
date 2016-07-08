@@ -1,12 +1,13 @@
 ﻿namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
     using MiniMQ.Core.MessageHandlers.General;
     using MiniMQ.Model.Core.MessageHandler;
 
-    internal class WebSocketSubscriber : IWebSocketSubscriber
+    internal class ApplicationWebSocketSubscriber : IWebSocketSubscriber
     {
         private readonly IMessageHandler messageHandler;
 
@@ -18,7 +19,7 @@
 
         private readonly CancellationTokenSource cancellationTokenSource;
 
-        public WebSocketSubscriber(
+        public ApplicationWebSocketSubscriber(
             IMessageHandler messageHandler, 
             IWebSocketClient webSocketClient, 
             IMessagePipeline pipeline, 
@@ -39,33 +40,32 @@
 
         public void Subscribe()
         {
-            Task.Run(this.SubscriberMethod);
+            Task.Run(this.WorkerMethodAsync);
         }
 
-        private async Task SubscriberMethod()
+        private async Task WorkerMethodAsync()
         {
-            await Task.Yield();
 
-            Task receiveHandlerMessageTask = null, receiveWebSocketMessageTask = null;
+            var disconnectWaitCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(this.cancellationTokenSource.Token, new CancellationToken());
 
-            while (this.webSocketClient.IsConnected && this.cancellationTokenSource.IsCancellationRequested == false)
+            var disconnectionTask = this.webSocketClient.WaitDisconnectAsync(-1, disconnectWaitCancellationTokenSource.Token);
+            var receiveHandlerMessageTask = this.messageHandler.ReceiveMessageAsync(this.pipeline, disconnectWaitCancellationTokenSource.Token);
+
+            var completedTask = await Task.WhenAny(receiveHandlerMessageTask, disconnectionTask);
+
+            // Snatch a copy, since Cancel may complete it
+            var disconnectionTaskCompleted = disconnectionTask.IsCompleted;
+
+            // Cancel the other one regardless which one completed
+            disconnectWaitCancellationTokenSource.Cancel();
+
+            if (disconnectionTaskCompleted)
             {
-                if (receiveHandlerMessageTask == null)
-                {
-                    receiveHandlerMessageTask = this.messageHandler.ReceiveMessageAsync(this.pipeline, this.cancellationTokenSource.Token);
-                }
-
-                var pollTask = Task.Delay(this.settings.ConnectionStatusCheckInterval, this.cancellationTokenSource.Token);
-
-                var result = await Task.WhenAny(receiveHandlerMessageTask, pollTask);
-
-                if (result == receiveHandlerMessageTask)
-                {
-                    receiveHandlerMessageTask = null;
-                }
+                return;
             }
 
-            this.cancellationTokenSource.Cancel();
+
+
         }
     }
 }

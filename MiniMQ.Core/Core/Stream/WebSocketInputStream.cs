@@ -1,4 +1,4 @@
-﻿namespace MiniMQ.Client.Implementation
+﻿namespace MiniMQ.Core.Core.Stream
 {
     using System;
     using System.IO;
@@ -6,15 +6,15 @@
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal class ClientInputStream : Stream
+    internal class WebSocketInputStream : Stream
     {
-        protected readonly ClientWebSocket ClientWebSocket;
+        protected readonly WebSocket webSocket;
 
         private bool isFinished = false;
 
-        public ClientInputStream(ClientWebSocket clientWebSocket)
+        public WebSocketInputStream(WebSocket webSocket)
         {
-            this.ClientWebSocket = clientWebSocket;
+            this.webSocket = webSocket;
         }
 
         public override void Flush()
@@ -39,7 +39,7 @@
                 return 0;
             }
 
-            var result = await this.ClientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), cancellationToken);
+            var result = await this.webSocket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, count), cancellationToken);
 
             if (result.EndOfMessage)
             {
@@ -47,6 +47,28 @@
             }
 
             return result.Count;
+        }
+
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            var buffer = new byte[bufferSize];
+
+            bool keepReading = true;
+
+            while (keepReading)
+            {
+                var result = await this.webSocket.ReceiveAsync(new ArraySegment<byte>(buffer, 0, bufferSize), cancellationToken);
+
+                if (result.Count > 0)
+                {
+                    await destination.WriteAsync(buffer, 0, result.Count, cancellationToken);
+                }
+
+                if (result.EndOfMessage)
+                {
+                    keepReading = false;
+                }
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -59,7 +81,7 @@
             throw new NotImplementedException();
         }
 
-        public override bool CanRead { get; }
+        public override bool CanRead => true;
 
         public override bool CanSeek => false;
 

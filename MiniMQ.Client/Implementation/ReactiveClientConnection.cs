@@ -5,26 +5,35 @@
 
     using Model;
 
-    internal class ReactiveClientConnection : ClientConnection, IReactiveClientConnection
+    internal class ReactiveClientConnection : ClientConnection, IReactiveClientConnection, IReactiveClientConnectionCallback
     {
         private readonly IReactiveConnection reactiveConnection;
 
         private readonly CancellationToken cancellationToken;
 
-        public ReactiveClientConnection(ClientWebSocket clientWebSocket, IReactiveConnection reactiveConnection, CancellationToken cancellationToken) : base(clientWebSocket)
+        private CancellationTokenSource receiveMessagesCancellationTokenSource; 
+
+        public ReactiveClientConnection(WebSocket webSocket, IReactiveConnection reactiveConnection, CancellationToken cancellationToken) : base(webSocket)
         {
             this.reactiveConnection = reactiveConnection;
             this.cancellationToken = cancellationToken;
-            this.StartReceivingNewMessage();
         }
 
-        private void StartReceivingNewMessage()
+        public void StartReceivingNewMessage()
         {
-            var inputStream = new ReactiveClientInputStream(this.clientWebSocket, this.reactiveConnection, this, this.cancellationToken);
+            this.receiveMessagesCancellationTokenSource = new CancellationTokenSource();
+
+            var inputStream = new ReactiveClientInputStream(
+                this.WebSocket, this.reactiveConnection, this, CancellationTokenSource.CreateLinkedTokenSource(this.cancellationToken, this.receiveMessagesCancellationTokenSource.Token).Token);
             inputStream.StartReceiving();
         }
 
-        public void MessageReceiveDone(ReactiveClientInputStream stream)
+        public void StopReceivingMessages()
+        {
+            this.receiveMessagesCancellationTokenSource.Cancel();
+        }
+
+        void IReactiveClientConnectionCallback.MessageReceiveDone(ReactiveClientInputStream stream)
         {
             this.StartReceivingNewMessage();
         }

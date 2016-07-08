@@ -15,12 +15,9 @@
 
         public bool SupportsWebSocketConnections => true;
 
-        public IMessageFactory GetMessageFactory()
-        {
-            throw new NotImplementedException();
-        }
+        public IMessageFactory MessageFactory { get; }
 
-        public Task ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public Task<IMessage> ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -30,7 +27,7 @@
             throw new NotImplementedException();
         }
 
-        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
+        public Task<IMessage> SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -40,7 +37,7 @@
             throw new NotImplementedException();
         }
 
-        public void RegisterWebSocket(IWebSocketClient webSocketClient)
+        public Task RegisterWebSocket(IWebSocketClient webSocketClient)
         {
             throw new NotImplementedException();
         }

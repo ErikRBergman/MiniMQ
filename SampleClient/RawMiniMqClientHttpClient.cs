@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SampleClient
+﻿namespace SampleClient
 {
+    using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text;
+    using System.Threading.Tasks;
 
     class RawMiniMqClientHttpClient
     {
@@ -28,8 +26,6 @@ namespace SampleClient
 
         public static async Task CallAsync(string baseUrl, string applicationName)
         {
-            await Task.Delay(8000);
-
             await Task.Yield();
 
             while (true)
@@ -60,6 +56,8 @@ namespace SampleClient
                         {
                             throw new Exception("Did not ping back...");
                         }
+
+                        Console.Write(".");
 
                         // Console.WriteLine("Received: " + text);
                     }

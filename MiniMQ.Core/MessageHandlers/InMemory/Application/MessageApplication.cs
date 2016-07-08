@@ -11,37 +11,16 @@
 
     public class MessageApplication : IMessageHandler
     {
-        private readonly IMessageFactory messageFactory;
-
-        private readonly IWebSocketSubscriberFactory webSocketSubscriberFactory;
-
         private readonly SemaphoreSlim semaphore = new SemaphoreSlim(0);
-
         private readonly ConcurrentQueue<IMessage> requestMessages = new ConcurrentQueue<IMessage>();
-
-        private struct RequestWaiter
-        {
-            public RequestWaiter(SemaphoreSlim waiter, IMessagePipeline pipeline, IMessage message = null)
-            {
-                this.Waiter = waiter;
-                this.Message = message;
-                this.Pipeline = pipeline;
-            }
-
-            public readonly SemaphoreSlim Waiter;
-
-            public IMessage Message;
-
-            public IMessagePipeline Pipeline { get; }
-        }
-
+        private readonly MessageApplicationWebSocketServiceCollection serviceCollection;
         private readonly ConcurrentDictionary<string, RequestWaiter> requestWaiters = new ConcurrentDictionary<string, RequestWaiter>();
 
         public MessageApplication(string name, IMessageFactory messageFactory, IWebSocketSubscriberFactory webSocketSubscriberFactory)
         {
-            this.messageFactory = messageFactory;
-            this.webSocketSubscriberFactory = webSocketSubscriberFactory;
+            this.MessageFactory = messageFactory;
             this.Name = name;
+            this.serviceCollection = new MessageApplicationWebSocketServiceCollection(this);
         }
 
         public string Name { get; }
@@ -50,20 +29,26 @@
 
         public bool SupportsWebSocketConnections => true;
 
-        public IMessageFactory GetMessageFactory()
+        public IMessageFactory MessageFactory { get; }
+
+        private Task WaitForNewMessageAsync(CancellationToken cancellationToken)
         {
-            return this.messageFactory;
+            return this.semaphore.WaitAsync(cancellationToken);
         }
 
-        public async Task ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public async Task<IMessage> ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
-            await this.semaphore.WaitAsync(cancellationToken);
-            IMessage message;
+            await this.WaitForNewMessageAsync(cancellationToken);
 
-            // this will only fail if there is a bug in the program
+            IMessage message;
             this.requestMessages.TryDequeue(out message);
 
-            await pipeline.SendMessageAsync(message);
+            if (pipeline != null)
+            {
+                await pipeline.SendMessageAsync(message);
+            }
+
+            return message;
         }
 
         public IMessage ReceiveMessageOrNull()
@@ -71,37 +56,39 @@
             throw new NotImplementedException();
         }
 
-        public async Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
+        public async Task<IMessage> SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
-            var source = new SemaphoreSlim(0);
-
             var uniqueId = message.UniqueIdentifier;
 
-            this.requestWaiters.TryAdd(uniqueId, new RequestWaiter(source, returnMessagePipeline));
-            this.requestMessages.Enqueue(message);
+            var pipeline = new MessageSniffingPipeline(returnMessagePipeline);
+            var waiter = new RequestWaiter(pipeline);
 
-            this.semaphore.Release();
-
-            RequestWaiter waiter;
+            this.requestWaiters.TryAdd(uniqueId, waiter);
 
             try
             {
-                await source.WaitAsync(cancellationToken);
+                this.SubmitMessageToQueue(message);
+                await waiter.WaitAsync(cancellationToken);
             }
-            catch (Exception)
+            finally
             {
-                this.requestWaiters.TryRemove(uniqueId, out waiter);
-                throw;
+                this.RemoveWaiter(uniqueId);
             }
 
-            if (this.requestWaiters.TryRemove(uniqueId, out waiter))
-            {
-                if (waiter.Message != null)
-                {
-                    await returnMessagePipeline.SendMessageAsync(waiter.Message);
-                }
-            }
+            return pipeline.Message;
+        }
 
+        private void SubmitMessageToQueue(IMessage message)
+        {
+            this.requestMessages.Enqueue(message);
+            this.semaphore.Release();
+        }
+
+        private RequestWaiter RemoveWaiter(string uniqueId)
+        {
+            RequestWaiter waiter;
+            this.requestWaiters.TryRemove(uniqueId, out waiter);
+            return waiter;
         }
 
         public async Task SendMessageAsync(IMessage message)
@@ -109,41 +96,19 @@
             var uniqueId = message.UniqueIdentifier;
 
             RequestWaiter waiter;
-
             if (this.requestWaiters.TryGetValue(uniqueId, out waiter))
             {
-                var pipeline = waiter.Pipeline;
-
-                if (pipeline != null)
-                {
-                    await pipeline.SendMessageAsync(message);
-                }
-                else
-                {
-                    waiter.Message = message;
-                    // Since waiter is a struct, we need to replace it in the dictionary
-                    this.requestWaiters[uniqueId] = waiter;
-                }
-
-                waiter.Waiter.Release();
+                await waiter.SendAndReleaseAsync(message);
             }
 
             // Message was sent to the application without the need for a response - fire and forget
-            this.requestMessages.Enqueue(message);
-            this.semaphore.Release();
-
+            this.SubmitMessageToQueue(message);
         }
 
-        public void RegisterWebSocket(IWebSocketClient webSocketClient)
+        public Task RegisterWebSocket(IWebSocketClient webSocketClient)
         {
             // At this point, only servers can connect with web sockets
-
-            var subscriber = this.webSocketSubscriberFactory.CreateSubscriber(this, webSocketClient);
-
-            subscriber.Subscribe();
-
-
-            throw new NotImplementedException();
+            return this.serviceCollection.RunServiceAsync(webSocketClient);
         }
     }
 }

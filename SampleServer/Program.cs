@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SampleServer
+﻿namespace SampleServer
 {
+    using System;
+    using System.Collections.Generic;
     using System.Configuration;
-    using System.Diagnostics;
-    using System.IO;
     using System.Net;
+    using System.Net.WebSockets;
+    using System.Text;
     using System.Threading;
+    using System.Threading.Tasks;
 
     class Program
     {
@@ -18,144 +15,72 @@ namespace SampleServer
         {
             ServicePointManager.DefaultConnectionLimit = 200;
 
-            var baseUrl = ConfigurationManager.AppSettings["serverBaseUrl"];
-            if (baseUrl.EndsWith("/") == false)
-            {
-                baseUrl = baseUrl + "/";
-            }
+            var baseUrl = ConfigurationManager.AppSettings["serverBaseUrl"].WithEndingSlash();
+            var reactiveBaseUrl = ConfigurationManager.AppSettings["reactiveServerBaseUrl"].WithEndingSlash();
 
             int serviceCount = 1;
             string applicationName = "app1";
 
-            MainAsync(baseUrl, applicationName, serviceCount).Wait();
+            MainAsync(baseUrl, reactiveBaseUrl, applicationName, serviceCount).Wait();
+
+            Console.ReadKey(false);
         }
 
-        private static async Task MainAsync(string baseUrl, string applicationName, int serviceCount)
+
+        private static async Task MainAsync(string baseUrl, string reactiveBaseUrl, string applicationName, int serviceCount)
         {
             await Task.Delay(2000);
+            await RawApplicationServer.CreateApplication(baseUrl, applicationName);
 
-            await CreateApplication(baseUrl, applicationName);
-            var tasks = new List<Task>(serviceCount);
+            var client = new ClientWebSocket();
+            client.Options.KeepAliveInterval = TimeSpan.FromSeconds(120);
+            await client.ConnectAsync(new Uri(reactiveBaseUrl + "wsc/" + applicationName), CancellationToken.None);
+
+            var buffer = new byte[1024];
+
+            Console.WriteLine("Connected to websocket");
+
+//            await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("Run to chuck")), WebSocketMessageType.Text, true, CancellationToken.None);
+
+            //while (client.State == WebSocketState.Open)
+            //{
+            //    var result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+            //    if (result.MessageType == WebSocketMessageType.Close)
+            //    {
+            //        Console.WriteLine("Socket closed!");
+            //        await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Requested by caller", CancellationToken.None);
+            //        return;
+            //    }
+
+            //    var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+
+            //    Console.WriteLine(text);
+
+            //    await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("OK fred, " + text)), WebSocketMessageType.Text, true, CancellationToken.None);
+            //}
+
+            //Console.WriteLine("Socket not open anymore...");
+
+            //return;
+
+            var tasks = new List<Task>(serviceCount+1);
+
+            var reactiveApplicationServer = new ReactiveApplicationServer();
 
             for (int i = 0; i < serviceCount; i++)
             {
-                tasks.Add(ServeAsync(baseUrl, applicationName));
+
+                tasks.Add(reactiveApplicationServer.ServeAsync(reactiveBaseUrl, applicationName, CancellationToken.None));
+
+//                tasks.Add(RawApplicationServer.ServeAsync(baseUrl, applicationName));
             }
+
+            // Wait for all eternity
+            await new TaskCompletionSource<bool>().Task;
 
             await Task.WhenAll(tasks);
         }
 
-        static string ReceiveMessageWaitUrl(string baseUrl, string messageHandlerName)
-        {
-            return baseUrl + "rcw/" + messageHandlerName;
-        }
-
-        static string CreateApplicationUrl(string baseUrl, string messageHandlerName)
-        {
-            return baseUrl + "cre_a/" + messageHandlerName;
-        }
-
-        static string SendMessageUrl(string baseUrl, string messageHandlerName)
-        {
-            return baseUrl + "snd/" + messageHandlerName;
-        }
-
-        private static long servedCount = 0;
-
-        static async Task ServeAsync(string baseUrl, string applicationName)
-        {
-            await Task.Yield();
-
-            Stopwatch stopwatch = null;
-
-            Console.WriteLine("Waiting to serve...");
-
-            while (true)
-            {
-                var request = GetHttpRequest(ReceiveMessageWaitUrl(baseUrl, applicationName));
-                request.Timeout = 1000 * 3600;
-
-                string transactionId;
-
-                string requestText = string.Empty;
-
-                using (var response = await request.GetResponseAsync())
-                {
-                    if (stopwatch == null)
-                    {
-                        stopwatch = Stopwatch.StartNew();
-                    }
-
-                    transactionId = response.Headers["transactionId"];
-
-                    using (var stream = response.GetResponseStream())
-                    {
-                        var reader = new StreamReader(stream);
-                        requestText = reader.ReadToEnd();
-
-                        // Console.WriteLine("Received: " + text);
-                    }
-                }
-
-                request = GetHttpRequest(SendMessageUrl(baseUrl, applicationName));
-                request.Headers["transactionId"] = transactionId;
-                request.Method = "POST";
-                request.Timeout = 30 * 1000;
-
-                var responseText = "OK " + requestText;
-                var bytes = Encoding.UTF8.GetBytes(responseText);
-                request.ContentLength = bytes.Length;
-
-                var requestStream = await request.GetRequestStreamAsync();
-                requestStream.Write(bytes, 0, bytes.Length);
-                requestStream.Close();
-
-                using (var response = await request.GetResponseAsync())
-                {
-                    using (var stream = response.GetResponseStream())
-                    {
-                        //var reader = new StreamReader(stream);
-                        //var text = reader.ReadToEnd();
-
-                        // Console.WriteLine("Received: " + text);
-                    }
-                }
-
-                var count = Interlocked.Increment(ref servedCount);
-
-                if (count % 10000 == 0)
-                { 
-                    Console.WriteLine(count + " served after " + stopwatch.Elapsed);
-                }
-
-            }
-
-
-        }
-
-        private static async Task CreateApplication(string baseUrl, string applicationName)
-        {
-            var request = GetHttpRequest(CreateApplicationUrl(baseUrl, applicationName));
-            request.Timeout = 1000 * 30;
-
-            using (var response = await request.GetResponseAsync())
-            {
-                using (var stream = response.GetResponseStream())
-                {
-                    var reader = new StreamReader(stream);
-                    var text = reader.ReadToEnd();
-
-                    Console.WriteLine("Application created: " + text);
-                }
-            }
-        }
-
-        private static HttpWebRequest GetHttpRequest(string url)
-        {
-            var request = WebRequest.CreateHttp(url);
-            request.Credentials = CredentialCache.DefaultCredentials;
-            request.KeepAlive = true;
-            return request;
-        }
     }
 }

@@ -3,6 +3,7 @@
     using System;
     using System.IO;
     using System.Net.WebSockets;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -21,13 +22,11 @@
 
         private readonly IMessageHandlerProducer messageHandlerProducer;
 
-        private readonly IHealthChecker healthChecker;
-
-        public Router(IMessageHandlerContainer messageHandlerContainer, IMessageHandlerProducer messageHandlerProducer, IHealthChecker healthChecker)
+        public Router(IMessageHandlerContainer messageHandlerContainer, IMessageHandlerProducer messageHandlerProducer, IWebSocketConnector webSocketConnector)
         {
             this.messageHandlerContainer = messageHandlerContainer;
             this.messageHandlerProducer = messageHandlerProducer;
-            this.healthChecker = healthChecker;
+            this.webSocketConnector = webSocketConnector;
         }
 
         public static readonly Task<RouteResult> RouteFailedTask = Task.FromResult(new RouteResult { Description = "Routing failed" });
@@ -46,6 +45,8 @@
         }
 
         private static readonly PathActionParser PathActionParser = new PathActionParser(PathActionMap.Items);
+
+        private IWebSocketConnector webSocketConnector;
 
         private struct ContextIsClientConnected : IClientConnected
         {
@@ -164,25 +165,24 @@
         {
             var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-            if (webSocket != null)
+            if (webSocket == null)
             {
-                if (webSocket.State == WebSocketState.Open)
-                {
-                    var client = new WebSocketClient(webSocket);
+                // Not sure someone will ever receive this..
+                return new RouteResult("AcceptWebSocketAsync returned null");
+            }
 
-                    this.healthChecker.Add(client);
+            if (webSocket.State == WebSocketState.Open)
+            {
+                await this.webSocketConnector.ConnectAsync(webSocket, messageHandler);
 
-                    messageHandler.RegisterWebSocket(client);
-                }
-                else
-                {
-                    // Not sure someone will ever receive this..
-                    return new RouteResult("Web socket is not open");
-                }
+//                var socketRouter = new WebSocketClientRouter(webSocket, messageHandler);
+//                await socketRouter.ServeClientAsync();
+
+                return new RouteResult();
             }
 
             // Not sure someone will ever receive this..
-            return new RouteResult("AcceptWebSocketAsync returned null");
+            return new RouteResult("Web socket is not open");
 
         }
 
@@ -192,7 +192,7 @@
 
             if (messageHandler != null)
             {
-                var factory = messageHandler.GetMessageFactory();
+                var factory = messageHandler.MessageFactory;
                 var messageToSend = await factory.CreateMessage(inputText);
 
                 await this.SendAndReceiveAwait(messageHandlerName, messageToSend, clientConnected, pipeline).ConfigureAwait(false);
@@ -211,7 +211,7 @@
 
             if (messageHandler != null)
             {
-                var factory = messageHandler.GetMessageFactory();
+                var factory = messageHandler.MessageFactory;
                 var messageToSend = await factory.CreateMessage(inputStream).ConfigureAwait(false);
 
                 await this.SendAndReceiveAwait(messageHandlerName, messageToSend, clientConnected, pipeline).ConfigureAwait(false);
@@ -245,7 +245,7 @@
 
             if (messageHandler != null)
             {
-                var messageFactory = messageHandler.GetMessageFactory();
+                var messageFactory = messageHandler.MessageFactory;
                 await messageHandler.SendMessageAsync(await messageFactory.CreateMessage(message).ConfigureAwait(false)).ConfigureAwait(false);
                 return;
             }
@@ -326,7 +326,7 @@
 
             if (messageHandler != null)
             {
-                var messageFactory = messageHandler.GetMessageFactory();
+                var messageFactory = messageHandler.MessageFactory;
 
                 var transactionId = headers["transactionId"];
 

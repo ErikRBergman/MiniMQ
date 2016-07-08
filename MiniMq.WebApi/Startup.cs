@@ -1,5 +1,6 @@
 ﻿namespace MiniMq.WebApi
 {
+    using System;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Builder;
@@ -45,10 +46,16 @@
                 loggerFactory.AddDebug();
             }
 
+            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
+
             app.UseWebSockets();
             app.Run(this.Handler);
         }
 
+        private void TaskSchedulerOnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs unobservedTaskExceptionEventArgs)
+        {
+            
+        }
 
         private Task Handler(HttpContext context)
         {

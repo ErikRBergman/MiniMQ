@@ -14,15 +14,16 @@ namespace MiniMQ.Core.Message
         public Message(Stream stream)
         {
             this.stream = stream;
-            this.UniqueIdentifier = Guid.NewGuid().ToString("N");
+            this.UniqueIdentifier = GetNewMessageId();
         }
+
+        private static string GetNewMessageId() => Guid.NewGuid().ToString("N");
 
         public Message(Stream stream, string uniqueId)
         {
             this.stream = stream;
-            this.UniqueIdentifier = uniqueId;
+            this.UniqueIdentifier = uniqueId ?? GetNewMessageId();
         }
-
 
         public Task<Stream> GetStream()
         {

@@ -9,13 +9,13 @@
 
     internal class ClientOutputStream : Stream
     {
-        private readonly ClientWebSocket clientWebSocket;
+        private readonly WebSocket webSocket;
 
         private bool isEndOfMessageSent = false;
 
-        internal ClientOutputStream(ClientWebSocket clientWebSocket)
+        internal ClientOutputStream(WebSocket webSocket)
         {
-            this.clientWebSocket = clientWebSocket;
+            this.webSocket = webSocket;
         }
 
         public override void Flush()
@@ -51,12 +51,12 @@
                 return this.SendCloseMessageAsync();
             }
 
-            return this.clientWebSocket.SendAsync(new ArraySegment<byte>(buffer, offset, count), WebSocketMessageType.Binary, false, cancellationToken);
+            return this.webSocket.SendAsync(new ArraySegment<byte>(buffer, offset, count), WebSocketMessageType.Binary, false, cancellationToken);
         }
 
         public Task SendCloseMessageAsync()
         {
-            return this.clientWebSocket.SendAsync(new ArraySegment<byte>(), WebSocketMessageType.Binary, true, CancellationToken.None);
+            return this.webSocket.SendAsync(new ArraySegment<byte>(), WebSocketMessageType.Binary, true, CancellationToken.None);
         }
 
         protected override void Dispose(bool disposing)

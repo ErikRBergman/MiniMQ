@@ -32,6 +32,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.DirectoryServices.Protocols" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -57,17 +58,24 @@
     <Compile Include="Core\Stream\PartitionedByteStream.cs" />
     <Compile Include="Core\Stream\QueueBridge.cs" />
     <Compile Include="Core\Stream\StreamExtensions.cs" />
+    <Compile Include="Core\Stream\WebSocketInputStream.cs" />
+    <Compile Include="Core\TaskExtensions.cs" />
+    <Compile Include="MessageHandlers\General\ApplicationWebSocketSubscriberFactory.cs" />
+    <Compile Include="MessageHandlers\General\MessageSniffingPipeline.cs" />
     <Compile Include="MessageHandlers\General\WebSocketClient.cs" />
     <Compile Include="MessageHandlers\General\IWebSocketSubscriber.cs" />
     <Compile Include="MessageHandlers\General\IWebSocketSubscriberFactory.cs" />
-    <Compile Include="MessageHandlers\General\WebSocketSubscriberFactory.cs" />
+    <Compile Include="MessageHandlers\General\ApplicationWebSocketSubscriber.cs" />
+    <Compile Include="MessageHandlers\General\QueueWebSocketSubscriberFactory.cs" />
+    <Compile Include="MessageHandlers\General\WebSocketClientRouter.cs" />
     <Compile Include="MessageHandlers\General\WebSubscriberSettings.cs" />
-    <Compile Include="MessageHandlers\General\WebSocketSubscriber.cs" />
+    <Compile Include="MessageHandlers\General\QueueWebSocketSubscriber.cs" />
     <Compile Include="MessageHandlers\General\WebSocketCollection.cs" />
     <Compile Include="MessageHandlers\General\WebSocketDestinationMessagePipeline.cs" />
     <Compile Include="MessageHandlers\InMemory\Application\MessageApplication.cs" />
     <Compile Include="MessageHandlers\InMemory\Application\MessageApplicationFactory.cs" />
     <Compile Include="MessageHandlers\InMemory\Application\MessageApplicationWebSocketServiceCollection.cs" />
+    <Compile Include="MessageHandlers\InMemory\Application\RequestWaiter.cs" />
     <Compile Include="MessageHandlers\InMemory\Bus\MessageBus.cs" />
     <Compile Include="MessageHandlers\InMemory\Bus\MessageBusFactory.cs" />
     <Compile Include="MessageHandlers\InMemory\Queue\InMemoryMessageQueue.cs" />

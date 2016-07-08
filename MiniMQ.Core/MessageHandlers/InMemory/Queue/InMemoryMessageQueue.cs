@@ -24,8 +24,6 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
     /// </summary>
     internal class InMemoryMessageQueue : IMessageHandler
     {
-        private readonly IMessageFactory messageFactory;
-
         private readonly IWebSocketSubscriberFactory webSocketSubscriberFactory;
 
         /// <summary>
@@ -53,14 +51,11 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
             IWebSocketSubscriberFactory webSocketSubscriberFactory)
         {
             this.Name = name;
-            this.messageFactory = messageFactory;
+            this.MessageFactory = messageFactory;
             this.webSocketSubscriberFactory = webSocketSubscriberFactory;
         }
 
-        public IMessageFactory GetMessageFactory()
-        {
-            return this.messageFactory;
-        }
+        public IMessageFactory MessageFactory { get; }
 
         /// <summary>
         /// The receive message async.
@@ -72,7 +67,7 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
         /// <returns>
         /// The <see cref="Task"/>.
         /// </returns>
-        public async Task ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public async Task<IMessage> ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
             await this.semaphore.WaitAsync(cancellationToken);
             IMessage message;
@@ -80,6 +75,8 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
             // this will only fail if there is a bug in the program
             this.messages.TryDequeue(out message);
             await pipeline.SendMessageAsync(message);
+
+            return message;
         }
 
         /// <summary>
@@ -102,7 +99,7 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
             return null;
         }
 
-        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
+        public Task<IMessage> SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException("Message queues do not support send and receive");
         }
@@ -139,14 +136,14 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Queue
             return Task.CompletedTask;
         }
 
-        public void RegisterWebSocket(IWebSocketClient webSocketClient)
+        public Task RegisterWebSocket(IWebSocketClient webSocketClient)
         {
-            // No keeping track on the clients yet...               
+            // No keeping track of the clients yet...               
 
-            IWebSocketSubscriber subscriber = this.webSocketSubscriberFactory.CreateSubscriber(this, webSocketClient);
+            var subscriber = this.webSocketSubscriberFactory.CreateSubscriber(this, webSocketClient);
             subscriber.Subscribe();
 
-            //subscriber.Subscribe();
+            return Task.CompletedTask;
         }
 
         /// <summary>

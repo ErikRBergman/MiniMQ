@@ -16,6 +16,18 @@
             return new Message(await CreateStreamCopy(stream));
         }
 
+        /// <summary>
+        /// Create a new message from a stream with the unique id.
+        /// </summary>
+        /// <param name="stream">
+        /// The stream.
+        /// </param>
+        /// <param name="uniqueId">
+        /// The unique id. If uniqueId is null, a new id will be created.
+        /// </param>
+        /// <returns>
+        /// The <see cref="Task"/>.
+        /// </returns>
         public async Task<IMessage> CreateMessage(Stream stream, string uniqueId)
         {
             return new Message(await CreateStreamCopy(stream), uniqueId);

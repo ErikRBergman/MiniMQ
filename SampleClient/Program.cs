@@ -1,4 +1,4 @@
-﻿namespace SampleServer
+﻿namespace SampleClient
 {
     using System;
     using System.Collections.Generic;
@@ -8,8 +8,6 @@
     using System.Threading.Tasks;
 
     using MiniMQ.Client;
-
-    using SampleClient;
 
     internal static class Program
     {
@@ -32,11 +30,11 @@
 
             var applicationName = "app1";
 
-            // RunRawClients(httpServerBaseUrl, clientCount).Wait();
 
             await Task.Delay(3000);
 
-            await RunSocketClients(webSocketServerBaseUrl, applicationName, clientCount);
+            await RunRawClients(httpServerBaseUrl, applicationName, clientCount);
+            // await RunSocketClients(webSocketServerBaseUrl, applicationName, clientCount);
         }
 
         private static string NormalizeUrl(string httpServerBaseUrl)
@@ -67,7 +65,7 @@
             string applicationName)
         {
             await Task.Yield();
-            await client.ConnectToServer(new Uri(baseUrl + "wsc/" + applicationName), new ReactiveConnectionClient(), CancellationToken.None);
+            await client.ConnectToServer(new Uri(baseUrl + "wsc/" + applicationName), new ReactiveClient(), CancellationToken.None);
         }
 
         private static Task RunRawClients(string baseUrl, string applicationName, int clientCount)

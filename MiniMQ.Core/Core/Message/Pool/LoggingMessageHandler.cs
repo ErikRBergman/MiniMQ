@@ -31,23 +31,21 @@ namespace MiniMQ.Core.Core.Message.Pool
 
         public bool SupportsWebSocketConnections => true;
 
-        public IMessageFactory GetMessageFactory()
-        {
-            return this.innerMessageHandler.GetMessageFactory();
-        }
+        public IMessageFactory MessageFactory => this.innerMessageHandler.MessageFactory;
 
-        public async Task ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
+        public async Task<IMessage> ReceiveMessageAsync(IMessagePipeline pipeline, CancellationToken cancellationToken)
         {
             try
             {
-                this.log.Log(LogType.Verbose, "ReceiveMessgeAsync started...");
+                this.log.Log(LogType.Verbose, "ReceiveMessageAsync started...");
                 var currentMessageNumber = Interlocked.Increment(ref this.messageNumber);
                 var loggingPipeline = new LoggingMessagePipeline("ReceiveMessageAsync", this.log, pipeline, currentMessageNumber);
-                await this.innerMessageHandler.ReceiveMessageAsync(loggingPipeline, cancellationToken);
+                return await this.innerMessageHandler.ReceiveMessageAsync(loggingPipeline, cancellationToken);
             }
             catch (Exception exception)
             {
                 this.log.Log(LogType.Error, "ReceiveMessageAstbc threw and exception: " + exception.ToString());
+                return null;
             }
             finally
             {
@@ -60,7 +58,7 @@ namespace MiniMQ.Core.Core.Message.Pool
             throw new NotImplementedException();
         }
 
-        public Task SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
+        public Task<IMessage> SendAndReceiveMessageAsync(IMessage message, IMessagePipeline returnMessagePipeline, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -70,7 +68,7 @@ namespace MiniMQ.Core.Core.Message.Pool
             throw new NotImplementedException();
         }
 
-        public void RegisterWebSocket(IWebSocketClient webSocketClient)
+        public Task RegisterWebSocket(IWebSocketClient webSocketClient)
         {
             throw new NotImplementedException();
         }

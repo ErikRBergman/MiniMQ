@@ -1,4 +1,4 @@
-﻿namespace SampleServer
+﻿namespace SampleClient
 {
     using System;
     using System.IO;
@@ -7,7 +7,7 @@
 
     using MiniMQ.Client;
 
-    internal class ReactiveConnectionClient : IReactiveConnection
+    internal class ReactiveClient : IReactiveConnection
     {
         /// <summary>
         /// The connection.
