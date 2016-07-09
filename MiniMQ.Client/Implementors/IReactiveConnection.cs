@@ -5,9 +5,9 @@
 
     public interface IReactiveConnection
     {
-        Task OnInitialize(IClientConnection connection);
+        Task OnConnectAsync(IClientConnection connection);
 
-        Task OnMessageReceived(Stream message);
+        Task OnMessageReceivedAsync(Stream message);
 
         void OnConnectionClosed(CloseStatus closeStatus, string closeStatusDescription);
     }

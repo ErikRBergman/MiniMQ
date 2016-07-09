@@ -5,13 +5,13 @@
       "type": "project",
       "framework": ".NETFramework,Version=v4.6.1",
       "compile": {
-        "bin/Debug/MiniMQ.Core.dll": {}
+        "bin/Release/MiniMQ.Core.dll": {}
       },
       "runtime": {
-        "bin/Debug/MiniMQ.Core.dll": {}
+        "bin/Release/MiniMQ.Core.dll": {}
       },
       "contentFiles": {
-        "bin/Debug/MiniMQ.Core.pdb": {
+        "bin/Release/MiniMQ.Core.pdb": {
           "buildAction": "None",
           "codeLanguage": "any",
           "copyToOutput": true
@@ -22,13 +22,13 @@
       "type": "project",
       "framework": ".NETFramework,Version=v4.6.1",
       "compile": {
-        "bin/Debug/MiniMQ.Model.dll": {}
+        "bin/Release/MiniMQ.Model.dll": {}
       },
       "runtime": {
-        "bin/Debug/MiniMQ.Model.dll": {}
+        "bin/Release/MiniMQ.Model.dll": {}
       },
       "contentFiles": {
-        "bin/Debug/MiniMQ.Model.pdb": {
+        "bin/Release/MiniMQ.Model.pdb": {
           "buildAction": "None",
           "codeLanguage": "any",
           "copyToOutput": true

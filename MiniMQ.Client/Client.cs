@@ -23,7 +23,7 @@ namespace MiniMQ.Client
             await client.ConnectAsync(serverUri, cancellationToken);
             var connection = new ReactiveClientConnection(client, reactiveConnection, cancellationToken);
 
-            await reactiveConnection.OnInitialize(connection);
+            await reactiveConnection.OnConnectAsync(connection);
             connection.StartReceivingNewMessage();
 
             this.clients.TryAdd(connection, false);

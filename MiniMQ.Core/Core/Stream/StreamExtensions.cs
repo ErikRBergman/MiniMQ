@@ -34,7 +34,7 @@
                 if (bytesRead > 0)
                 {
                     var endOfMessage = bytesLeft == 0;
-                    await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, bytesRead), WebSocketMessageType.Binary, endOfMessage, cancellationToken);
+                    await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, bytesRead), WebSocketMessageType.Text, endOfMessage, cancellationToken);
                 }
             }
         }

@@ -18,7 +18,7 @@
             var baseUrl = ConfigurationManager.AppSettings["serverBaseUrl"].WithEndingSlash();
             var reactiveBaseUrl = ConfigurationManager.AppSettings["reactiveServerBaseUrl"].WithEndingSlash();
 
-            int serviceCount = 1;
+            int serviceCount = 50;
             string applicationName = "app1";
 
             MainAsync(baseUrl, reactiveBaseUrl, applicationName, serviceCount).Wait();
@@ -32,13 +32,13 @@
             await Task.Delay(2000);
             await RawApplicationServer.CreateApplication(baseUrl, applicationName);
 
-            var client = new ClientWebSocket();
-            client.Options.KeepAliveInterval = TimeSpan.FromSeconds(120);
-            await client.ConnectAsync(new Uri(reactiveBaseUrl + "wsc/" + applicationName), CancellationToken.None);
+            //var client = new ClientWebSocket();
+            //client.Options.KeepAliveInterval = TimeSpan.FromSeconds(120);
+            //await client.ConnectAsync(new Uri(reactiveBaseUrl + "wsc/" + applicationName), CancellationToken.None);
 
-            var buffer = new byte[1024];
+            //var buffer = new byte[1024];
 
-            Console.WriteLine("Connected to websocket");
+            //Console.WriteLine("Connected to websocket");
 
 //            await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("Run to chuck")), WebSocketMessageType.Text, true, CancellationToken.None);
 

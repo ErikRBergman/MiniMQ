@@ -105,7 +105,7 @@
 
             this.buffer.Length = result.Count;
 
-            await this.reactiveConnection.OnMessageReceived(this);
+            await this.reactiveConnection.OnMessageReceivedAsync(this);
 
             if (result.EndOfMessage)
             {

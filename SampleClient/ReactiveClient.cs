@@ -25,7 +25,7 @@
         /// <param name="connection">
         /// The connection.
         /// </param>
-        public async Task OnInitialize(IClientConnection connection)
+        public async Task OnConnectAsync(IClientConnection connection)
         {
             this.connection = connection;
             await this.SendRequest();
@@ -65,7 +65,7 @@
         /// </returns>
         /// <exception cref="Exception">
         /// </exception>
-        public async Task OnMessageReceived(Stream message)
+        public async Task OnMessageReceivedAsync(Stream message)
         {
             using (var reader = new StreamReader(message))
             {

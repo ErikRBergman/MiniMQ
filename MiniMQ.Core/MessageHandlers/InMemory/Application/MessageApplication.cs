@@ -99,6 +99,7 @@
             if (this.requestWaiters.TryGetValue(uniqueId, out waiter))
             {
                 await waiter.SendAndReleaseAsync(message);
+                return;
             }
 
             // Message was sent to the application without the need for a response - fire and forget

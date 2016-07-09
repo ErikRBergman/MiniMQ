@@ -1,6 +1,7 @@
 ﻿namespace SampleServer
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Text;
     using System.Threading;
@@ -13,13 +14,21 @@
     {
         private IClientConnection connection;
 
-        public Task OnInitialize(IClientConnection connection)
+        private static int servedCount = 0;
+
+        private static Stopwatch stopwatch = new Stopwatch();
+
+        public Task OnConnectAsync(IClientConnection connection)
         {
+            stopwatch.Start();
+
+            Console.WriteLine("Connected to web socket...");
+
             this.connection = connection;
             return Task.CompletedTask;
         }
 
-        public async Task OnMessageReceived(Stream message)
+        public async Task OnMessageReceivedAsync(Stream message)
         {
             string requestText;
 
@@ -27,6 +36,17 @@
             {
                 requestText = await reader.ReadToEndAsync();
             }
+
+            // Console.Write(".");
+            var count = Interlocked.Increment(ref servedCount);
+
+            if (count % 10000 == 0)
+            {
+                Console.WriteLine(count + " served after " + stopwatch.Elapsed);
+            }
+
+
+            // Console.WriteLine("Received message: " + requestText);
 
             var responseText = "OK " + requestText;
             var bytes = Encoding.UTF8.GetBytes(responseText);

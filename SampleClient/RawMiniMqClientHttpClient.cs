@@ -45,6 +45,8 @@
                 requestStream.Write(bytes, 0, bytes.Length);
                 requestStream.Close();
 
+                //Console.Write("q");
+
                 using (var response = await request.GetResponseAsync())
                 {
                     using (var stream = response.GetResponseStream())
@@ -57,7 +59,7 @@
                             throw new Exception("Did not ping back...");
                         }
 
-                        Console.Write(".");
+                        // Console.Write("s");
 
                         // Console.WriteLine("Received: " + text);
                     }

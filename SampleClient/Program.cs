@@ -26,7 +26,7 @@
             var webSocketServerBaseUrl = ConfigurationManager.AppSettings["webSocketServerBaseUrl"];
             webSocketServerBaseUrl = NormalizeUrl(webSocketServerBaseUrl);
 
-            int clientCount = 1;
+            int clientCount = 50;
 
             var applicationName = "app1";
 

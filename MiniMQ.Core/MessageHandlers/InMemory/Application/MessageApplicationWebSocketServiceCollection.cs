@@ -106,6 +106,11 @@ namespace MiniMQ.Core.MessageHandlers.InMemory.Application
 
                     var responseMessage = await this.GetMessageFromSocket(requestMessage.UniqueIdentifier);
 
+                    if (responseMessage != null)
+                    {
+                        await this.messageHandler.SendMessageAsync(responseMessage);
+                    }
+
                 }
                 while (true);
 
